@@ -209,51 +209,80 @@ class SettingsPanel(QWidget):
         self.colour(f, "caption colour", "caption_color", "caption_custom")
 
     def _build_images(self) -> None:
-        """Every drawing that can appear, with a SHOW box. Hidden ones never appear; nothing is deleted."""
+        """Every actor with BOTH its drawing and its painting, and his choice: DRAWING / PAINTING / HIDDEN.
+        Hidden never appears; nothing is deleted. A button fetches the missing paintings (Pollinations)."""
+        from pathlib import Path as _P
+        from ..art import Art
+        from ..stories import STORIES
+        from .sprites import draw_sprite, black_keyed
+        from .ghibli import render
+        from PyQt6.QtGui import QImage
+        self.art = Art(_P(__file__).resolve().parents[2] / "art", fetch=False)
         area = QScrollArea(); area.setWidgetResizable(True)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         body = QWidget(); body.setMinimumWidth(0); grid = QGridLayout(body); grid.setSpacing(6)
         self.tabs.addTab(area, "IMAGES"); area.setWidget(body)
-        top = QCheckBox("paintings for every actor that has one (~/party/art/)")
-        top.toggled.connect(lambda b: self._set("use_art", bool(b)))
-        self._binders.append(lambda: top.setChecked(bool(self.win.use_art)))
-        grid.addWidget(top, 0, 0, 1, 3)
-        hint = QLabel("SHOW: untick to hide an actor · PAINT: use its painting (edges fade, no border) instead of the drawing · files stay in ~/party/assets/sprites/ and ~/party/art/ (edit or delete them yourself)")
-        hint.setObjectName("hint"); hint.setWordWrap(True); grid.addWidget(hint, 1, 0, 1, 3)
-        from ..stories import STORIES
+        style = QComboBox(); style.addItems(["ASTRAL  (glowing line art)", "CUTE  (the anime drawings)"])
+        style.currentIndexChanged.connect(lambda i: (self._set("sprite_style", ("ASTRAL", "CUTE")[i]), self._rethumb()))
+        self._binders.append(lambda: style.setCurrentIndex(1 if self.win.sprite_style == "CUTE" else 0))
+        grid.addWidget(QLabel("drawing style"), 0, 0); grid.addWidget(style, 0, 1, 1, 2)
+        fetch = QPushButton("FETCH MISSING PAINTINGS"); self.fetch_status = QLabel(""); self.fetch_status.setObjectName("hint")
+        fetch.clicked.connect(self._fetch); grid.addWidget(fetch, 1, 0, 1, 2); grid.addWidget(self.fetch_status, 1, 2)
+        hint = QLabel("left: drawing · right: painting (edges fade, no box) · pick what appears, or HIDDEN · files stay in ~/party/assets/sprites and ~/party/art")
+        hint.setObjectName("hint"); hint.setWordWrap(True); grid.addWidget(hint, 2, 0, 1, 3)
+        self._cards: dict[str, tuple[QLabel, QLabel, QComboBox]] = {}
+        for i, kind in enumerate(sorted({k for k, _ in STORIES})):
+            card = QWidget(); col = QVBoxLayout(card); col.setContentsMargins(2, 4, 2, 4); col.setSpacing(3)
+            row = QHBoxLayout(); d = QLabel(); d.setFixedSize(64, 64); p_ = QLabel(); p_.setFixedSize(64, 64)
+            for lab in (d, p_):
+                lab.setAlignment(Qt.AlignmentFlag.AlignCenter); lab.setStyleSheet(f"border: 1px solid {theme.HAIRLINE}; background: {theme.VOID};")
+            row.addWidget(d); row.addWidget(p_); col.addLayout(row)
+            name = QLabel(kind); name.setAlignment(Qt.AlignmentFlag.AlignCenter); col.addWidget(name)
+            choice = QComboBox(); choice.addItems(["DRAWING", "PAINTING", "HIDDEN"])
+            def on(ix, kind=kind):
+                if self._syncing:
+                    return
+                self.win.sources[kind] = ("drawing", "painting", "hidden")[ix]; self.win._changed()
+            choice.currentIndexChanged.connect(on); col.addWidget(choice)
+            self._binders.append(lambda choice=choice, kind=kind: choice.setCurrentIndex(
+                ("drawing", "painting", "hidden").index(self.win.sources.get(kind, "drawing"))))
+            self._cards[kind] = (d, p_, choice)
+            grid.addWidget(card, 3 + i // 2, i % 2)
+        self._rethumb()
+
+    def _rethumb(self) -> None:
+        from .sprites import draw_sprite, black_keyed
         from .ghibli import render
-        from ..art import Art
-        art = Art(self.win.__class__.__module__ and __import__("pathlib").Path(__file__).resolve().parents[2] / "art", fetch=False)
-        actors = sorted({k for k, _ in STORIES})
-        self._thumbs: dict[str, QLabel] = {}
-        for i, kind in enumerate(actors):
-            card = QWidget(); col = QVBoxLayout(card); col.setContentsMargins(2, 2, 2, 2); col.setSpacing(2)
-            pic = QLabel(); pic.setFixedSize(84, 84); pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            img = render(kind, 84)
-            if img is not None:
-                pic.setPixmap(QPixmap.fromImage(img))
-            self._thumbs[kind] = pic
-            box = QCheckBox(f"show {kind}")
-            def on(b, kind=kind):
-                if self._syncing:
-                    return
-                hidden = set(self.win.hidden_actors)
-                hidden.discard(kind) if b else hidden.add(kind)
-                self.win.hidden_actors = sorted(hidden); self.win._changed()
-            box.toggled.connect(on)
-            self._binders.append(lambda box=box, kind=kind: box.setChecked(kind not in self.win.hidden_actors))
-            paint = QCheckBox("paint")
-            paint.setEnabled(bool(art.files(kind)))
-            def onp(b, kind=kind):
-                if self._syncing:
-                    return
-                chosen = set(self.win.art_actors)
-                chosen.add(kind) if b else chosen.discard(kind)
-                self.win.art_actors = sorted(chosen); self.win._changed()
-            paint.toggled.connect(onp)
-            self._binders.append(lambda paint=paint, kind=kind: paint.setChecked(kind in self.win.art_actors))
-            col.addWidget(pic); col.addWidget(box); col.addWidget(paint)
-            grid.addWidget(card, 2 + i // 3, i % 3)
+        from PyQt6.QtGui import QImage
+        for kind, (d, p_, _) in self._cards.items():
+            img = render(kind, 64) if self.win.sprite_style == "CUTE" else draw_sprite(kind).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            d.setPixmap(QPixmap.fromImage(img) if img is not None else QPixmap())
+            f = self.art.pick(kind)
+            if f:
+                src = QImage(str(f)); src = src.copy(0, 0, src.width(), int(src.height() * 0.88))
+                p_.setPixmap(QPixmap.fromImage(black_keyed(src).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)))
+                p_.setToolTip(str(f))
+            else:
+                p_.setText("none\nyet"); p_.setStyleSheet(f"border: 1px dashed {theme.HAIRLINE}; color: {theme.GHOST}; font-size: 9px;")
+
+    def _fetch(self) -> None:
+        """Fetch on a thread; the UI is only touched from the Qt thread (a timer polls)."""
+        import threading
+        from PyQt6.QtCore import QTimer
+        self.fetch_status.setText("fetching… (a few per minute on the free tier)")
+        self._fetch_done = False
+        def run():
+            self.art._fetch_missing(pause=3.0)
+            self._fetch_done = True
+        threading.Thread(target=run, daemon=True).start()
+        def poll():
+            if not self._fetch_done:
+                QTimer.singleShot(1000, poll); return
+            left = len(self.art.missing())
+            why = f" ({next(iter(self.art.failed.values()))})" if self.art.failed and left else ""
+            self.fetch_status.setText(f"done — {left} still missing{why}")
+            self._rethumb()
+        QTimer.singleShot(1000, poll)
 
     def _build_profiles(self) -> None:
         f = self._tab("PROFILES")

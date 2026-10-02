@@ -51,3 +51,11 @@ delete some… pollinations in general suck let's stay with the svgs… anime dr
 then "the only good pollinations ones were the ones where you can't tell the borders like the dove…
 also the spaceship". Built: IMAGES tab (show/paint per actor, hide not delete), 30 SVG drawings,
 fetch off, vignette on paintings, dove + ufo paintings on by default.
+
+His words (2026-10-02): "leave cute mode for a future cute mode… they need to fade in fade out
+also have depth… the dove… was the only one rocking it… don't delete pollinations just understand
+that I want to be able to choose in the settings… the close ups rock… a gold fish in space… this is
+a mental health project… I also want other aesthetics not cute… 33 year old coder dreaming of space
+and the astral realm… not angels and jesus idol images". Built: ASTRAL default + CUTE switch,
+per-actor DRAWING/PAINTING/HIDDEN with both thumbnails + fetch button, angel/jesus hidden by
+default, close-ups 45%, slower fades.

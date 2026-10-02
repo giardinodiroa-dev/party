@@ -483,7 +483,7 @@ class AuraWindow(QOpenGLWindow):
                       "phrase_custom": (200.0, 0.8), "ledaie": True, "ledaie_font": "MONO", "ledaie_color": 5,
                       "ledaie_custom": (45.0, 0.8), "caption_font": "MONO", "caption_color": 0,
                       "caption_custom": (200.0, 0.85), "constellations": True,
-                      "use_art": False, "hidden": [], "art_actors": ["dove", "ufo"]}
+                      "sources": {}, "sprite_style": "ASTRAL"}
         self.timer = QTimer(self); self.timer.timeout.connect(self.update)
         self._slow = 0
         self._t0 = time.monotonic()
@@ -548,17 +548,18 @@ class AuraWindow(QOpenGLWindow):
                     lt, lw, lh = self.textures.text(f"{show.word}  ·  {show.meaning}", 22, led_font)
                     out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * 0.8, led_tint))
         if self.flags["stories"]:
-            self.stories.hidden = set(self.flags["hidden"])
+            sources = self.flags["sources"]
+            self.stories.hidden = {k for k, v in sources.items() if v == "hidden"}
             shot = self.stories.frame(t)
             if shot is not None:
-                wants_art = self.flags["use_art"] or shot.kind in self.flags["art_actors"]
+                wants_art = sources.get(shot.kind) == "painting"
                 painting = self.art.pick(shot.kind) if (self.art is not None and wants_art) else None
                 got = self.textures.art(str(painting)) if painting else None
                 if got is not None:
                     tex, w, h = got
                     k = (0.3 * H) / max(h, 1); w, h = w * k, h * k     # paintings: ~30% of screen height
                 else:
-                    tex, w, h = self.textures.sprite(shot.kind)
+                    tex, w, h = self.textures.sprite(shot.kind, str(self.flags["sprite_style"]))
                 sw, sh = w * shot.scale / W, h * shot.scale / H
                 out.append((tex, shot.x - sw / 2, shot.y - sh / 2, sw, sh, shot.alpha, (0.95, 0.95, 1.0)))
                 if shot.caption_alpha > 0.01:

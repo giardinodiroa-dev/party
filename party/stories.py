@@ -353,8 +353,9 @@ class Stories:
                 holy = [st for st in pool if st[0] in HOLY]
                 if kind not in HOLY and holy and self.rng.random() < 0.35:   # the holy ones come round twice as often
                     kind, caption = self.rng.choice(holy)
-                path = self.rng.choice(PATHS)
-                self.current = (kind, caption, path, t, self.rng.uniform(8.0, 14.0), self.rng.uniform(0.15, 0.75))
+                close = ["approach", "zoom", "recede"]
+                path = self.rng.choice(close) if self.rng.random() < 0.45 else self.rng.choice(PATHS)   # close-ups rock
+                self.current = (kind, caption, path, t, self.rng.uniform(9.0, 16.0), self.rng.uniform(0.15, 0.75))
                 self.played += 1
             return None
         kind, caption, path, t0, dur, lane = self.current
@@ -368,7 +369,7 @@ class Stories:
     @staticmethod
     def _shot(kind: str, caption: str, path: str, u: float, lane: float, t: float) -> Shot:
         import math
-        fade = min(1.0, u * 6.0, (1.0 - u) * 6.0)
+        fade = min(1.0, u * 3.0, (1.0 - u) * 3.0)           # a third in, a third out: never a hard cut
         if path == "pass_lr":
             x, y, s = -0.1 + 1.2 * u, lane + 0.03 * math.sin(u * 6.0), 1.0
         elif path == "pass_rl":
@@ -380,7 +381,7 @@ class Stories:
             x, y, s = 0.5 + 0.3 * math.cos(a), 0.45 + 0.22 * math.sin(a), 0.8 + 0.3 * math.sin(a)
         elif path == "zoom":
             x, y, s = 0.35 + lane * 0.4, 0.4 + 0.1 * u, 0.2 + 2.2 * u
-            fade = min(1.0, u * 4.0, (1.0 - u) * 3.0)
+            fade = min(1.0, u * 3.0, (1.0 - u) * 2.5)
         elif path == "appear":                     # breathe in place, then dissolve
             x, y, s = 0.2 + lane * 0.6, 0.35 + 0.1 * math.sin(t * 0.8), 1.0 + 0.08 * math.sin(t * 2.0)
             fade = math.sin(u * math.pi)
@@ -388,12 +389,12 @@ class Stories:
             z = 4.0 - 3.6 * u
             ax, ay = 0.15 + lane * 0.7, 0.3 + 0.4 * (lane * 7 % 1)
             x, y, s = VANISH[0] + (ax - VANISH[0]) / z, VANISH[1] + (ay - VANISH[1]) / z, 1.0 / z
-            fade = min(1.0, u * 5.0, (1.0 - u) * 3.0) * min(1.0, 1.6 / z + 0.2)
+            fade = min(1.0, u * 3.0, (1.0 - u) * 2.5) * min(1.0, 1.6 / z + 0.2)
         elif path == "recede":                     # from your face into the deep
             z = 0.5 + 3.5 * u
             ax, ay = 0.15 + lane * 0.7, 0.3 + 0.4 * (lane * 7 % 1)
             x, y, s = VANISH[0] + (ax - VANISH[0]) / z, VANISH[1] + (ay - VANISH[1]) / z, 1.0 / z
-            fade = min(1.0, u * 4.0, (1.0 - u) * 2.5) * min(1.0, 2.0 / z)
+            fade = min(1.0, u * 2.5, (1.0 - u) * 2.5) * min(1.0, 2.0 / z)
         elif path == "weave":                      # crosses the screen while diving in and out
             z = 1.0 + 0.7 * math.sin(u * math.tau * 1.5)
             ax = -0.1 + 1.2 * u

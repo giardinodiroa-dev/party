@@ -64,10 +64,10 @@ def draw_handscript(text: str, px: int) -> QImage:
     return img
 
 
-def _painter(img: QImage) -> QPainter:
+def _painter(img: QImage, width: float = 3.2, alpha: float = 1.0) -> QPainter:
     p = QPainter(img)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
-    pen = QPen(INK, 3.2)
+    pen = QPen(theme.alpha(INK, alpha), width)
     pen.setCapStyle(Qt.PenCapStyle.RoundCap)
     pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
     p.setPen(pen)
@@ -75,14 +75,29 @@ def _painter(img: QImage) -> QPainter:
     return p
 
 
+_FILL_ON = True      # the glow passes draw strokes only; fills are laid once, on the final pass
+
+
 def _fill(p: QPainter, on: bool = True) -> None:
-    p.setBrush(theme.alpha(INK, 0.35) if on else Qt.BrushStyle.NoBrush)
+    p.setBrush(theme.alpha(INK, 0.16) if (on and _FILL_ON) else Qt.BrushStyle.NoBrush)
 
 
-def draw_sprite(kind: str) -> QImage:
+def draw_sprite(kind: str, glow: bool = True) -> QImage:
+    """Astral line art: luminous bone strokes with a soft halo — a constellation drawing, not a cartoon."""
     img = QImage(SIZE, SIZE, QImage.Format.Format_ARGB32_Premultiplied)
     img.fill(Qt.GlobalColor.transparent)
-    p = _painter(img)
+    global _FILL_ON
+    passes = ((11.0, 0.10), (6.0, 0.22), (3.2, 1.0)) if glow else ((3.2, 1.0),)
+    for width, alpha in passes:
+        _FILL_ON = alpha >= 1.0
+        p = _painter(img, width, alpha)
+        _draw_kind(p, kind)
+        p.end()
+    _FILL_ON = True
+    return img
+
+
+def _draw_kind(p: QPainter, kind: str) -> None:
     c = QPointF(64, 64)
     if kind == "ufo":
         _fill(p); p.drawEllipse(QRectF(14, 60, 100, 28))
@@ -251,8 +266,6 @@ def draw_sprite(kind: str) -> QImage:
         _fill(p); p.drawEllipse(QRectF(24, 18, 80, 60))
     else:
         p.drawEllipse(c, 30, 30)
-    p.end()
-    return img
 
 
 def draw_constellation(stars: list[tuple[float, float]], lines: list[tuple[int, int]], size: int = 320) -> QImage:
@@ -347,12 +360,15 @@ class TextureCache:
         self.items: OrderedDict[tuple, tuple[int, int, int]] = OrderedDict()
         self.limit = limit
 
-    def sprite(self, kind: str) -> tuple[int, int, int]:
+    def sprite(self, kind: str, style: str = "ASTRAL") -> tuple[int, int, int]:
         def make():
-            from .ghibli import render
-            img = render(kind)
-            return img if img is not None else draw_sprite(kind)
-        return self._get(("sprite", kind), make)
+            if style == "CUTE":
+                from .ghibli import render
+                img = render(kind)
+                if img is not None:
+                    return img
+            return draw_sprite(kind)
+        return self._get(("sprite", kind, style), make)
 
     def art(self, path: str, max_px: int = 512) -> tuple[int, int, int] | None:
         """A painting on black, keyed to light. None if the file does not load."""

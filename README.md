@@ -70,9 +70,9 @@ lightness. Bars: style, shape, colour, height, slimness and which edges. Esc clo
 
 ## Drawings and the IMAGES tab
 
-The story actors are hand-authored SVG drawings in a soft anime style (`assets/sprites/<actor>.svg`,
-rendered with QtSvg). Edit a file and the story shows your version; code never overwrites a file
-that exists. Pollinations fetching is off. The IMAGES tab in settings shows every actor with a
-SHOW box (hidden actors never appear; nothing is deleted) and a PAINT box that uses the actor's
-painting from `art/` instead, with a vignette so edges always fade to nothing. Dove and the
-saucer use their paintings by default.
+Two drawing styles, switched in the IMAGES tab: ASTRAL (default: luminous line art with a halo,
+constellation-like) and CUTE (soft anime SVGs in `assets/sprites/`, kept for a cute mode). The
+IMAGES tab shows every actor with both its drawing and its painting and a choice per actor:
+DRAWING, PAINTING or HIDDEN. Paintings (`art/`) get a vignette so edges fade to nothing, like the
+dove. Default: painting where one exists, drawing otherwise, angel and Jesus hidden. FETCH MISSING
+PAINTINGS asks Pollinations for the rest (free tier: a few per minute). Nothing is ever deleted.

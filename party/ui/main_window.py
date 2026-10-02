@@ -31,7 +31,7 @@ PROFILE_KEYS = ("mode", "sensitivity", "hotreload", "aura", "aura_width", "aura_
                 "aura_color", "aura_border", "aura_ghost", "aura_waves", "aura_shape", "aura_bright",
                 "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "story_gap", "phrase_gap", "phrase_font", "phrase_color", "phrase_size", "phrase_anim",
                 "bar_height", "bar_fill", "phrase_custom", "ledaie_on", "ledaie_font", "ledaie_color", "ledaie_custom",
-                "caption_font", "caption_color", "caption_custom", "constellations_on", "use_art", "hidden_actors", "art_actors")
+                "caption_font", "caption_color", "caption_custom", "constellations_on", "sources", "sprite_style")
 TITLE_H = 30.0
 BAR_H = 56.0
 EDGE = 7
@@ -178,10 +178,9 @@ class MainWindow(QWidget):
         self.caption_color = 0
         self.caption_custom = (200.0, 0.85)
         self.constellations_on = True
-        self.use_art = False
-        self.hidden_actors: list[str] = []
-        self.art_actors: list[str] = ["dove", "ufo"]
+        self.sprite_style = "ASTRAL"
         self.settings = None
+        self.sources: dict[str, str] = self.default_sources()   # actor -> drawing | painting | hidden
         self.aura_lens = False
         self.aura_brainwash = True
         self.aura_stories = True
@@ -263,9 +262,15 @@ class MainWindow(QWidget):
         self.bar_fill = min(0.95, max(0.15, float(state.get("bar_fill", 0.4))))
         self.ledaie_on = bool(state.get("ledaie_on", True))
         self.constellations_on = bool(state.get("constellations_on", True))
-        self.use_art = bool(state.get("use_art", False))
-        self.hidden_actors = [str(x) for x in state.get("hidden_actors", []) if isinstance(x, str)]
-        self.art_actors = [str(x) for x in state.get("art_actors", ["dove", "ufo"]) if isinstance(x, str)]
+        self.sprite_style = "CUTE" if state.get("sprite_style") == "CUTE" else "ASTRAL"
+        self.sources = self.default_sources()
+        for k in state.get("hidden_actors", []) or []:          # older saves
+            self.sources[str(k)] = "hidden"
+        for k in state.get("art_actors", []) or []:
+            self.sources[str(k)] = "painting"
+        src = state.get("sources")
+        if isinstance(src, dict):
+            self.sources.update({str(k): v for k, v in src.items() if v in ("drawing", "painting", "hidden")})
         self.ledaie_font = str(state.get("ledaie_font", "MONO"))
         self.caption_font = str(state.get("caption_font", "MONO"))
         self.ledaie_color = max(-2, min(len(COLOR_MODES) - 1, int(state.get("ledaie_color", 5))))
@@ -317,9 +322,8 @@ class MainWindow(QWidget):
             self.aura.flags["caption_color"] = self.caption_color
             self.aura.flags["caption_custom"] = self.caption_custom
             self.aura.flags["constellations"] = self.constellations_on
-            self.aura.flags["use_art"] = self.use_art
-            self.aura.flags["hidden"] = list(self.hidden_actors)
-            self.aura.flags["art_actors"] = list(self.art_actors)
+            self.aura.flags["sources"] = dict(self.sources)
+            self.aura.flags["sprite_style"] = self.sprite_style
         return p
 
     STORY_GAPS = [5.0, 10.0, 20.0, 40.0, 90.0]
@@ -437,6 +441,16 @@ class MainWindow(QWidget):
             self.aura_wanted = True
         self._changed()
 
+    def default_sources(self) -> dict[str, str]:
+        """Painting where one exists (edges fade, like the dove), drawing otherwise; the idols hidden."""
+        from ..art import Art
+        from ..stories import STORIES
+        art = Art(ROOT / "art", fetch=False)
+        out = {}
+        for kind in sorted({k for k, _ in STORIES}):
+            out[kind] = "hidden" if kind in ("angel", "jesus") else ("painting" if art.files(kind) else "drawing")
+        return out
+
     def _follow_default(self) -> None:
         """AUTO: when he switches output devices, the tap moves with the default sink."""
         if self.source is None and self.tap.alive:
@@ -463,8 +477,7 @@ class MainWindow(QWidget):
                 "ledaie_font": self.ledaie_font, "ledaie_color": self.ledaie_color, "ledaie_custom": list(self.ledaie_custom),
                 "caption_font": self.caption_font, "caption_color": self.caption_color,
                 "caption_custom": list(self.caption_custom), "constellations_on": self.constellations_on,
-                "use_art": self.use_art, "hidden_actors": list(self.hidden_actors),
-                "art_actors": list(self.art_actors),
+                "sources": dict(self.sources), "sprite_style": self.sprite_style,
                 "profile": self.profile,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
