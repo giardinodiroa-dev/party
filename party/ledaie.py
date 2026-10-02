@@ -64,16 +64,18 @@ class LedaieWords:
 
     @property
     def active(self) -> bool:
-        return self.current is not None
+        return self.current is not None or getattr(self, "force", False)
 
     def begin(self, t: float) -> None:
         self.next_at = t
+        self.force = True                     # start on the very next frame, whatever the clock says
 
     def frame(self, t: float) -> Show | None:
         if not self.entries:
             return None
         if self.current is None:
-            if t >= self.next_at and (self.auto or self.next_at == t):
+            if t >= self.next_at and (self.auto or getattr(self, "force", False)):
+                self.force = False
                 e = self.rng.choice(self.entries)
                 kind = "symbol" if self.rng.random() < 0.4 else "word"
                 self.current = (e, kind, t, self.rng.uniform(6.0, 9.0), self.rng.uniform(0.2, 0.8), self.rng.uniform(0.2, 0.7))

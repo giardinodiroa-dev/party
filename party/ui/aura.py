@@ -74,7 +74,7 @@ in vec2 uv; out vec4 frag;
 uniform sampler2D screen; uniform sampler2D prevGlow; uniform sampler2D prevClean;
 void main(){
   vec4 c = texture(screen, uv); vec4 g = texture(prevGlow, uv);
-  if (g.a > 0.6) { frag = vec4(texture(prevClean, uv).rgb, 1.0); return; }    // we drew something solid here (lens, a body): keep what we last saw beneath
+  if (g.a > 0.97) { frag = vec4(texture(prevClean, uv).rgb, 1.0); return; }   // only what we drew SOLID (lens, a body at 0.985): keep what we last saw beneath
   float a = min(g.a, 0.95);
   frag = vec4(clamp((c.rgb - g.rgb) / (1.0 - a), 0.0, 1.0), 1.0);
 }
@@ -342,7 +342,7 @@ SDF_FRAG = """#version 330 core
 in vec2 tuv; out vec4 frag;
 uniform int mode; uniform vec3 joints[12]; uniform float woman; uniform float yaw; uniform float bank;
 uniform vec3 tint; uniform float alpha; uniform float time; uniform float engine;
-uniform sampler2D halo; uniform vec2 res; uniform float behind;
+uniform sampler2D halo; uniform sampler2D clean; uniform vec2 res; uniform float behind;
 float smin(float a, float b, float k){ float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
 float sdCapsule(vec3 p, vec3 a, vec3 b, float r){ vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - r; }
 float sdEllipsoid(vec3 p, vec3 r){ return (length(p / r) - 1.0) * min(min(r.x, r.y), r.z); }   // conservative: never overshoots
@@ -430,15 +430,22 @@ void main(){
     col = base * (0.18 + 0.85 * diff + fl) + vec3(1.0, 0.95, 0.9) * spec * ((mat > 3.5 && mat < 4.5) ? 1.2 : 0.4)
         + vec3(0.85, 0.9, 1.0) * rim * 0.9 + base * sss * vec3(1.0, 0.5, 0.4);
     if (mat > 4.5) col += vec3(1.0, 0.7, 0.3) * (1.5 + 1.5 * engine);
-    col *= tint;
+    col = min(col * tint, vec3(1.0));                        // valid premultiplied output: never brighter than alpha allows
     a = 1.0;
   }
   float haloA = exp(-max(dmin, 0.0) * 22.0) * 0.35;             // a soft light around the body
   col += tint * vec3(0.8, 0.85, 1.0) * haloA * (1.0 - a);
   a = max(a, haloA);
-  float content = smoothstep(0.02, 0.18, texture(halo, gl_FragCoord.xy / res).r);
-  float keep = 1.0 - behind * content * 0.92;              // slips behind the words and lines
-  frag = vec4(col * alpha * keep, a * alpha * keep);
+  // Behind the words: the body stays opaque to the capture pass (so it is never un-blended into
+  // black), and the screen's own pixels are painted over it where there is text or a line.
+  vec2 suv = gl_FragCoord.xy / res;
+  float content = smoothstep(0.02, 0.18, texture(halo, suv).r) * behind;
+  if (a > 0.5) {
+    col = mix(col, texture(clean, suv).rgb, content * 0.95);
+    frag = vec4(col * 0.985 * alpha, 0.985 * alpha);
+  } else {
+    frag = vec4(col * alpha * (1.0 - content * 0.9), a * alpha * (1.0 - content * 0.9));
+  }
 }
 """
 BLIT = """#version 330 core
@@ -471,6 +478,7 @@ class AuraParams:
     lens: bool = False                  # black-hole cursor
     cursor: tuple[float, float] = (0.5, 0.5)   # uv, y down
     spectrum: np.ndarray = field(default_factory=lambda: np.zeros(N_BINS, dtype=np.float32))
+    spotlight: float = 0.0              # 1 while something is on stage: the ambient sky steps back
     sprites: list = field(default_factory=list)   # (tex, x, y, w, h in uv, alpha, (r,g,b)[, angle])
     bodies: list = field(default_factory=list)    # dicts: mode, rect(x,y,w,h), joints, woman, yaw, bank, tint, alpha, engine
     streak: tuple = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)   # head x, y, dir x, dir y, length px, amount
@@ -578,7 +586,7 @@ class AuraPipeline:
                    {"edges": 0, "halo": 1, "clean": 2, "spectrum": 3, "time": float(p.time), "hue": float(p.hue),
                     "loud": float(p.loud), "bass": float(p.bass), "flash": float(p.flash),
                     "coreAmt": amt * 0.8 if p.bold else 0.0, "haloAmt": amt * 2.6,
-                    "astralAmt": 1.0 if p.astral else 0.0, "ghostAmt": 1.0 if p.ghost else 0.0,
+                    "astralAmt": (1.0 if p.astral else 0.0) * (1.0 - 0.6 * p.spotlight), "ghostAmt": (1.0 if p.ghost else 0.0) * (1.0 - 0.6 * p.spotlight),
                     "colorMode": int(p.color_mode), "border": int(p.border), "waveStyle": int(p.waves),
                     "waveShape": int(p.wave_shape), "bright": float(p.bright), "edgeMask": int(p.edges), "barColor": int(p.bar_color),
                     "barHeight": float(p.bar_height), "barFill": float(p.bar_fill),
@@ -595,7 +603,7 @@ class AuraPipeline:
                 flat = [float(v) for j in js[:12] for v in j] + [0.0] * (36 - 3 * min(12, len(js)))
                 gl.glUniform3fv(prog.uniformLocation("joints"), 12, flat)
                 prog.release()
-                self._draw("sdf", [self.blur_fbo[1].texture()], (W, H), {"halo": 0, "behind": 1.0, "mode": int(b["mode"]), "rect": tuple(b["rect"]), "woman": float(b.get("woman", 0.0)),
+                self._draw("sdf", [self.blur_fbo[1].texture(), clean], (W, H), {"halo": 0, "clean": 1, "behind": float(b.get("behind", 1.0)), "mode": int(b["mode"]), "rect": tuple(b["rect"]), "woman": float(b.get("woman", 0.0)),
                                                "yaw": float(b.get("yaw", 0.0)), "bank": float(b.get("bank", 0.0)), "tint": tuple(b.get("tint", (1.0, 1.0, 1.0))),
                                                "alpha": float(b.get("alpha", 1.0)), "time": float(p.time), "engine": float(b.get("engine", 0.0)),
                                                "angle": 0.0, "res": (float(W), float(H))}, strip=True)
@@ -711,13 +719,17 @@ class AuraWindow(QOpenGLWindow):
                    "phrase": self.flags["brainwash"] and bool(self.brainwash.phrases),
                    "image": self.flags["brainwash"] and bool(self.brainwash.images), "scene": self.flags["scenes"]}
         on = self.stage.tick(t, enabled, self.sources)
+        self._spot = getattr(self, "_spot", 0.0) + ((1.0 if on else 0.0) - getattr(self, "_spot", 0.0)) * 0.08
+        p.spotlight = self._spot
         if on == "scene":
             fr = self.scenes.frame(t, p.bass)
             if fr is not None:
                 p.streak = fr.streak
                 for b in fr.bodies:
                     bw = b["size"] * H / W; bh = b["size"]
-                    p.bodies.append({**b, "rect": (b["x"] - bw / 2, b["y"] - bh / 2, bw, bh)})
+                    p.bodies.append({**b, "rect": (b["x"] - bw / 2, b["y"] - bh / 2, bw, bh),
+                                     "alpha": 0.985 if b.get("alpha", 1.0) > 0.9 else b.get("alpha", 1.0),
+                                     "behind": 1.0})                                   # everything passes behind the words
                 for q in fr.quads:
                     if q.kind in ("glow", "spark"):
                         tex, w, h = self.textures.glow()

@@ -313,14 +313,16 @@ class Constellations:
 
     @property
     def active(self) -> bool:
-        return self.current is not None
+        return self.current is not None or getattr(self, "force", False)
 
     def begin(self, t: float) -> None:
         self.next_at = t
+        self.force = True                     # start on the very next frame, whatever the clock says
 
     def frame(self, t: float) -> Sky | None:
         if self.current is None:
-            if t >= self.next_at and (self.auto or self.next_at == t):
+            if t >= self.next_at and (self.auto or getattr(self, "force", False)):
+                self.force = False
                 self.current = (self.rng.randrange(len(CONSTELLATIONS)), t, self.rng.uniform(14.0, 22.0),
                                 self.rng.uniform(0.25, 0.75), self.rng.uniform(0.25, 0.65))
             return None
@@ -361,14 +363,16 @@ class Stories:
 
     @property
     def active(self) -> bool:
-        return self.current is not None
+        return self.current is not None or getattr(self, "force", False)
 
     def begin(self, t: float) -> None:
         self.next_at = t
+        self.force = True                     # start on the very next frame, whatever the clock says
 
     def frame(self, t: float) -> Shot | None:
         if self.current is None:
-            if t >= self.next_at and (self.auto or self.next_at == t):
+            if t >= self.next_at and (self.auto or getattr(self, "force", False)):
+                self.force = False
                 pool = [st for st in STORIES if st[0] not in self.hidden] or STORIES
                 kind, caption = self.rng.choice(pool)
                 holy = [st for st in pool if st[0] in HOLY]

@@ -195,3 +195,24 @@ def test_stage_shows_one_thing_at_a_time():
         assert sum(1 for s_ in srcs.values() if s_.active) <= 1
     names = [x for x in seen if x]
     assert len(set(names)) == 6 and any(x is None for x in seen[60:])
+
+
+def test_real_sources_never_overlap_on_stage():
+    from pathlib import Path as _P
+    from party.stories import Stories, Constellations
+    from party.ledaie import LedaieWords
+    from party.brainwash import Brainwash
+    from party.scenes import Stage, Scenes, BrainwashSource
+    st, co, le, bw, sc = Stories(seed=1), Constellations(seed=1), LedaieWords(seed=1), Brainwash(_P("brainwash")), Scenes(seed=1)
+    for s_ in (st, co, le, bw): s_.auto = False
+    srcs = {"story": st, "constellation": co, "ledaie": le, "phrase": BrainwashSource(bw, "text"), "image": BrainwashSource(bw, "image"), "scene": sc}
+    stage = Stage(breath=1.0); seen = set()
+    for i in range(5000):
+        t = i / 20
+        on = stage.tick(t, {k: True for k in srcs}, srcs)
+        if on in ("phrase", "image"): srcs[on].settle(); bw.frame(t)
+        elif on: srcs[on].frame(t)
+        live = [k for k in ("story", "constellation", "ledaie", "scene") if srcs[k].active] + (["phrase"] if bw.text else []) + (["image"] if bw.image else [])
+        assert len(live) <= 1, (t, live)
+        if on: seen.add(on)
+    assert {"story", "ledaie", "phrase", "scene", "constellation"} <= seen
