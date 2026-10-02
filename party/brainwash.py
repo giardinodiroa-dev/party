@@ -43,7 +43,18 @@ class Brainwash:
         self.gap = 5.0                      # his setting: seconds between phrases (±40%); images every 4 gaps
         self.text: tuple[str, float, float, float, float] | None = None     # phrase, t0, dur, x, y
         self.image: tuple[str, float, float, float, float] | None = None
+        self.auto = True                      # False: the stage calls begin(kind, t); never self-starts
         self.reload()
+
+    @property
+    def active(self) -> bool:
+        return self.text is not None or self.image is not None
+
+    def begin(self, kind: str, t: float) -> None:
+        if kind == "image":
+            self.next_image = t; self.force_image = True
+        else:
+            self.next_text = t; self.force_text = True
 
     def reload(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -68,7 +79,8 @@ class Brainwash:
 
     def frame(self, t: float, flash: float = 0.0) -> list[Item]:
         out: list[Item] = []
-        if self.text is None and t >= self.next_text and self.phrases:
+        if self.text is None and t >= self.next_text and self.phrases and (self.auto or getattr(self, "force_text", False)):
+            self.force_text = False
             self.text = (self.rng.choice(self.phrases), t, self.rng.uniform(4.0, 7.0),
                          self.rng.uniform(0.15, 0.85), self.rng.uniform(0.2, 0.8))
         if self.text is not None:
@@ -80,7 +92,8 @@ class Brainwash:
             else:
                 a = min(1.0, u * 4.0, (1.0 - u) * 4.0) * (0.18 + 0.12 * flash)
                 out.append(Item("text", phrase, x, y - 0.04 * u, 1.0, a))
-        if self.image is None and t >= self.next_image and self.images:
+        if self.image is None and t >= self.next_image and self.images and (self.auto or getattr(self, "force_image", False)):
+            self.force_image = False
             self.image = (self.rng.choice(self.images), t, self.rng.uniform(6.0, 9.0),
                           self.rng.uniform(0.2, 0.8), self.rng.uniform(0.25, 0.75))
         if self.image is not None:

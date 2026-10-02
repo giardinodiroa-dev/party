@@ -189,7 +189,7 @@ class SettingsPanel(QWidget):
     def _build_brainwash(self) -> None:
         f = self._tab("BRAINWASH")
         self.check(f, "brainwash phrases and pictures", "aura_brainwash")
-        self.slider(f, "phrase every", "phrase_gap", 1.0, 60.0, 1.0, "{:.0f}s")
+        self.slider(f, "breath between things", "phrase_gap", 1.0, 60.0, 1.0, "{:.0f}s")
         self.font(f, "font", "phrase_font", PHRASE_FONT_NAMES)
         self.colour(f, "colour", "phrase_color", "phrase_custom")
         self.combo(f, "size", "phrase_size", SIZES)
@@ -200,6 +200,8 @@ class SettingsPanel(QWidget):
     def _build_stories(self) -> None:
         f = self._tab("STORIES")
         self.check(f, "stories in the void", "aura_stories")
+        self.check(f, "mini-movies (shooting stars, ships)", "aura_scenes")
+        self.combo(f, "mini-movie finish", "aura_look", ["ALL · one per story", "CHROME", "HOLO", "TOON", "PEARL", "NEON", "GHOST"], [-1, 0, 1, 2, 3, 4, 5])
         self.slider(f, "story every", "story_gap", 3.0, 120.0, 1.0, "{:.0f}s")
         self.check(f, "real constellations", "constellations_on")
         self.check(f, "Ledaie words and symbols", "ledaie_on")

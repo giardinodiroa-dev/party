@@ -1,0 +1,86 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs><filter id="cl"><feTurbulence type="fractalNoise" baseFrequency=".006" numOctaves="4" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .92  0 0 0 0 .95  0 0 0 0 1  0 0 0 1.6 -.55"/><feGaussianBlur stdDeviation="2"/></filter>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a3a"/><stop offset=".55" stop-color="#2b4a8a"/><stop offset="1" stop-color="#c9a0d8"/></linearGradient>
+<radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6d0"/><stop offset=".3" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient></defs>
+<rect width="960" height="540" fill="url(#sky)"/>
+<g id="ground" transform="translate(480 270) scale(.1)" opacity=".9"><rect x="-960" y="-540" width="1920" height="1080" fill="#2f5d3a"/><g><rect x="-716" y="-88" width="76" height="175" fill="#8a7a3a" opacity=".8"/>
+<rect x="-840" y="-381" width="194" height="198" fill="#6b8a3a" opacity=".8"/>
+<rect x="586" y="319" width="135" height="192" fill="#2b4a8a" opacity=".8"/>
+<rect x="28" y="-459" width="185" height="153" fill="#2b4a8a" opacity=".8"/>
+<rect x="373" y="449" width="161" height="54" fill="#2b4a8a" opacity=".8"/>
+<rect x="335" y="-351" width="185" height="153" fill="#3f7a4a" opacity=".8"/>
+<rect x="347" y="462" width="93" height="135" fill="#8a7a3a" opacity=".8"/>
+<rect x="-800" y="430" width="138" height="161" fill="#2b4a8a" opacity=".8"/>
+<rect x="416" y="-165" width="148" height="72" fill="#6b8a3a" opacity=".8"/>
+<rect x="-372" y="-148" width="162" height="111" fill="#2b4a8a" opacity=".8"/>
+<rect x="-17" y="119" width="183" height="125" fill="#3f7a4a" opacity=".8"/>
+<rect x="475" y="312" width="116" height="178" fill="#3f7a4a" opacity=".8"/>
+<rect x="-199" y="35" width="59" height="76" fill="#8a7a3a" opacity=".8"/>
+<rect x="537" y="-348" width="48" height="80" fill="#8a7a3a" opacity=".8"/>
+<rect x="506" y="-162" width="66" height="50" fill="#3f7a4a" opacity=".8"/>
+<rect x="813" y="47" width="162" height="149" fill="#8a7a3a" opacity=".8"/>
+<rect x="-556" y="-32" width="164" height="61" fill="#2b4a8a" opacity=".8"/>
+<rect x="18" y="-234" width="82" height="70" fill="#3f7a4a" opacity=".8"/>
+<rect x="-88" y="263" width="175" height="121" fill="#3f7a4a" opacity=".8"/>
+<rect x="-616" y="-46" width="106" height="101" fill="#2b4a8a" opacity=".8"/>
+<rect x="812" y="-175" width="155" height="74" fill="#3f7a4a" opacity=".8"/>
+<rect x="397" y="242" width="57" height="80" fill="#2b4a8a" opacity=".8"/>
+<rect x="-880" y="-218" width="147" height="165" fill="#3f7a4a" opacity=".8"/>
+<rect x="-865" y="79" width="159" height="49" fill="#3f7a4a" opacity=".8"/>
+<rect x="-758" y="-43" width="140" height="119" fill="#3f7a4a" opacity=".8"/>
+<rect x="376" y="363" width="198" height="104" fill="#3f7a4a" opacity=".8"/>
+<rect x="-85" y="63" width="129" height="70" fill="#8a7a3a" opacity=".8"/>
+<rect x="545" y="37" width="159" height="92" fill="#6b8a3a" opacity=".8"/>
+<rect x="385" y="-206" width="160" height="60" fill="#8a7a3a" opacity=".8"/>
+<rect x="-536" y="172" width="167" height="151" fill="#6b8a3a" opacity=".8"/>
+<rect x="584" y="-404" width="89" height="96" fill="#6b8a3a" opacity=".8"/>
+<rect x="-496" y="158" width="156" height="187" fill="#8a7a3a" opacity=".8"/>
+<rect x="-190" y="-400" width="57" height="81" fill="#2b4a8a" opacity=".8"/>
+<rect x="-897" y="291" width="151" height="107" fill="#2b4a8a" opacity=".8"/>
+<rect x="827" y="-124" width="118" height="117" fill="#3f7a4a" opacity=".8"/>
+<rect x="-232" y="-80" width="105" height="154" fill="#8a7a3a" opacity=".8"/>
+<rect x="-306" y="55" width="159" height="183" fill="#8a7a3a" opacity=".8"/>
+<rect x="-501" y="122" width="74" height="151" fill="#6b8a3a" opacity=".8"/>
+<rect x="93" y="431" width="162" height="67" fill="#3f7a4a" opacity=".8"/>
+<rect x="118" y="227" width="187" height="161" fill="#6b8a3a" opacity=".8"/></g></g>
+<g id="c1"><rect x="-960" y="-540" width="2880" height="1620" filter="url(#cl)" opacity=".9"/></g>
+<g id="c2"><rect x="-960" y="-540" width="2880" height="1620" filter="url(#cl)" opacity=".8"/></g>
+<g id="wind"><line class="w" x1="776" y1="259" x2="97" y2="98" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="125" y1="424" x2="813" y2="533" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="468" y1="118" x2="54" y2="495" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="763" y1="389" x2="255" y2="497" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="537" y1="118" x2="625" y2="483" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="768" y1="421" x2="316" y2="481" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="368" y1="79" x2="11" y2="228" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="29" y1="430" x2="582" y2="142" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="636" y1="500" x2="653" y2="210" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="538" y1="526" x2="70" y2="245" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="94" y1="185" x2="58" y2="82" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="158" y1="91" x2="804" y2="493" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="610" y1="122" x2="424" y2="22" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="588" y1="271" x2="450" y2="237" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="429" y1="127" x2="221" y2="118" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="371" y1="398" x2="390" y2="158" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="707" y1="334" x2="328" y2="50" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="44" y1="15" x2="829" y2="173" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="629" y1="24" x2="822" y2="292" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="137" y1="485" x2="443" y2="222" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="239" y1="521" x2="584" y2="432" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="573" y1="524" x2="299" y2="461" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="79" y1="223" x2="881" y2="465" stroke="#fff" stroke-width="1.5" opacity="0"/>
+<line class="w" x1="692" y1="189" x2="190" y2="109" stroke="#fff" stroke-width="1.5" opacity="0"/></g>
+<path id="canopy" d="M180 -400 Q480 -520 780 -400 L600 -150 L360 -150Z" fill="#ff7eb6" opacity="0"/>
+<rect id="white" width="960" height="540" fill="#fff" opacity="0"/></svg>
+<script>window.scene=function(tl){
+  gsap.set('#c1',{scale:.4,transformOrigin:'50% 50%',opacity:0}); gsap.set('#c2',{scale:.4,transformOrigin:'50% 50%',opacity:0});
+  tl.to('.w',{opacity:.7,duration:.1,repeat:40,yoyo:true,stagger:{each:.02,from:'random'}},0);
+  tl.to('#ground',{scale:.5,duration:7,ease:'power1.in'},0);
+  tl.to('#c1',{scale:6,opacity:1,duration:3,ease:'power2.in'},0.5); tl.to('#c1',{opacity:0,duration:.4},3.3);
+  tl.to('#c2',{scale:6,opacity:1,duration:3,ease:'power2.in'},2.4); tl.to('#c2',{opacity:0,duration:.4},5.2);
+  tl.to('#white',{opacity:.9,duration:.15},6.8); tl.to('#white',{opacity:0,duration:.6},6.95);
+  tl.to('#canopy',{opacity:1,y:380,duration:.9,ease:'back.out(1.4)'},6.9);
+  tl.to('.w',{opacity:0,duration:.3},7.0);
+  tl.to('#ground',{scale:.7,duration:6,ease:'none'},7.2); tl.to('#ground',{x:'+=30',rotation:3,duration:3,yoyo:true,repeat:1,ease:'sine.inOut'},7.2);
+  say(tl,'.caption','falling. the wind is the only sound',0.6,3); say(tl,'.caption','through the clouds, the ground coming up to meet you',3.2,3.2); say(tl,'.caption','the canopy opens. the world slows. you drift.',7.2,3.6);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

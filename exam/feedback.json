@@ -1,0 +1,21 @@
+{
+  "clips": {
+    "_smoke": {
+      "text": "test line",
+      "verdict": "good",
+      "at": "07:27:36"
+    },
+    "alien-kiss": {
+      "text": "",
+      "verdict": "bad",
+      "at": "07:31:06"
+    },
+    "alien-gas": {
+      "text": "The concept is good but this is the wrong aesthetic this looks like a 90's paint drawing I explicitly said that itshould be realistic and you are deliberatley rejecting my aesthtic requests",
+      "verdict": "",
+      "at": "07:31:10"
+    }
+  },
+  "done": false,
+  "updated": "2026-10-02T07:31:10"
+}

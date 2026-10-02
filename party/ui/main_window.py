@@ -31,7 +31,7 @@ PROFILE_KEYS = ("mode", "sensitivity", "hotreload", "aura", "aura_width", "aura_
                 "aura_color", "aura_border", "aura_ghost", "aura_waves", "aura_shape", "aura_bright",
                 "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "story_gap", "phrase_gap", "phrase_font", "phrase_color", "phrase_size", "phrase_anim",
                 "bar_height", "bar_fill", "phrase_custom", "ledaie_on", "ledaie_font", "ledaie_color", "ledaie_custom",
-                "caption_font", "caption_color", "caption_custom", "constellations_on", "sources", "sprite_style")
+                "caption_font", "caption_color", "caption_custom", "constellations_on", "sources", "sprite_style", "aura_scenes", "aura_look")
 TITLE_H = 30.0
 BAR_H = 56.0
 EDGE = 7
@@ -179,6 +179,8 @@ class MainWindow(QWidget):
         self.caption_custom = (200.0, 0.85)
         self.constellations_on = True
         self.sprite_style = "ASTRAL"
+        self.aura_scenes = True
+        self.aura_look = -1                                   # -1 = ALL (one of six per story) · 0..5 fixed
         self.settings = None
         self.sources: dict[str, str] = self.default_sources()   # actor -> drawing | painting | hidden
         self.aura_lens = False
@@ -262,6 +264,8 @@ class MainWindow(QWidget):
         self.bar_fill = min(0.95, max(0.15, float(state.get("bar_fill", 0.4))))
         self.ledaie_on = bool(state.get("ledaie_on", True))
         self.constellations_on = bool(state.get("constellations_on", True))
+        self.aura_scenes = bool(state.get("aura_scenes", True))
+        self.aura_look = int(state.get("aura_look", -1))
         self.sprite_style = state.get("sprite_style") if state.get("sprite_style") in ("ASTRAL", "CUTE", "DARK", "ELECTRIC", "HOLLOW") else "ASTRAL"
         self.sources = self.default_sources()
         for k in state.get("hidden_actors", []) or []:          # older saves
@@ -324,6 +328,8 @@ class MainWindow(QWidget):
             self.aura.flags["constellations"] = self.constellations_on
             self.aura.flags["sources"] = dict(self.sources)
             self.aura.flags["sprite_style"] = self.sprite_style
+            self.aura.flags["scenes"] = self.aura_scenes
+            self.aura.flags["look"] = self.aura_look
         return p
 
     STORY_GAPS = [5.0, 10.0, 20.0, 40.0, 90.0]
@@ -477,7 +483,7 @@ class MainWindow(QWidget):
                 "ledaie_font": self.ledaie_font, "ledaie_color": self.ledaie_color, "ledaie_custom": list(self.ledaie_custom),
                 "caption_font": self.caption_font, "caption_color": self.caption_color,
                 "caption_custom": list(self.caption_custom), "constellations_on": self.constellations_on,
-                "sources": dict(self.sources), "sprite_style": self.sprite_style,
+                "sources": dict(self.sources), "sprite_style": self.sprite_style, "aura_scenes": self.aura_scenes, "aura_look": self.aura_look,
                 "profile": self.profile,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}

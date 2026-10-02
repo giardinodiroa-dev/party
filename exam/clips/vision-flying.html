@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs><filter id="cl"><feTurbulence type="fractalNoise" baseFrequency=".006" numOctaves="4" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .92  0 0 0 0 .95  0 0 0 0 1  0 0 0 1.6 -.55"/><feGaussianBlur stdDeviation="2"/></filter>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a3a"/><stop offset=".55" stop-color="#2b4a8a"/><stop offset="1" stop-color="#c9a0d8"/></linearGradient>
+<radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6d0"/><stop offset=".3" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient></defs>
+<rect id="sky" width="960" height="540" fill="url(#sky)"/>
+<circle id="sun" cx="700" cy="150" r="140" fill="url(#sun)" opacity=".9"/>
+<g id="far"><rect x="-960" y="260" width="2880" height="300" filter="url(#cl)" opacity=".55"/></g>
+<g id="mid"><rect x="-960" y="320" width="2880" height="300" filter="url(#cl)" opacity=".8"/></g>
+<g id="near"><rect x="-960" y="400" width="2880" height="300" filter="url(#cl)"/></g>
+<g id="birds" opacity="0"><path d="M340 338 q8 -10 16 0 q8 -10 16 0" fill="none" stroke="#1b1b24" stroke-width="2"/>
+<path d="M380 346 q8 -10 16 0 q8 -10 16 0" fill="none" stroke="#1b1b24" stroke-width="2"/>
+<path d="M420 354 q8 -10 16 0 q8 -10 16 0" fill="none" stroke="#1b1b24" stroke-width="2"/>
+<path d="M460 362 q8 -10 16 0 q8 -10 16 0" fill="none" stroke="#1b1b24" stroke-width="2"/>
+<path d="M500 370 q8 -10 16 0 q8 -10 16 0" fill="none" stroke="#1b1b24" stroke-width="2"/></g>
+<ellipse id="shadow" cx="480" cy="470" rx="60" ry="14" fill="#07070a" opacity="0"/>
+<rect id="vig" width="960" height="540" fill="url(#sun)" opacity="0"/></svg>
+<script>window.scene=function(tl){
+  gsap.set('#near,#mid,#far',{x:0}); gsap.set('svg',{transformOrigin:'50% 50%'});
+  tl.to('#near',{x:-900,duration:12,ease:'none'},0); tl.to('#mid',{x:-520,duration:12,ease:'none'},0); tl.to('#far',{x:-220,duration:12,ease:'none'},0);
+  tl.to('svg',{rotation:-7,duration:2.4,ease:'sine.inOut'},1.0); tl.to('svg',{rotation:6,duration:3,ease:'sine.inOut'},3.6); tl.to('svg',{rotation:0,duration:2.4,ease:'sine.inOut'},6.8);
+  tl.to('#sun',{opacity:1,scale:1.3,transformOrigin:'50% 50%',duration:1.5,yoyo:true,repeat:1},3.4);
+  tl.to('#birds',{opacity:1,x:-700,y:60,duration:5,ease:'none'},4.0);
+  tl.to('#shadow',{opacity:.35,x:40,duration:3,yoyo:true,repeat:1},5.5);
+  tl.to('#vig',{opacity:.35,duration:1.2},10.6);
+  say(tl,'.caption','you are flying; the clouds tear past under you',0.6,3); say(tl,'.caption','bank into the sun; birds below you',3.8,3.2); say(tl,'.caption','your shadow runs over the clouds. this is yours.',7.4,3);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

@@ -1,0 +1,68 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<linearGradient id="panel" x1="0" x2="1"><stop offset="0" stop-color="#1b3a6b"/><stop offset=".5" stop-color="#3f7fd6"/><stop offset="1" stop-color="#1b3a6b"/></linearGradient></defs>
+<g id="stars"><circle cx="959" cy="81" r="1" fill="#efe8da" opacity="0.6"/>
+<circle cx="545" cy="178" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="180" cy="397" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="365" cy="483" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="27" cy="509" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="254" cy="458" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="472" cy="225" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="829" cy="74" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="386" cy="297" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="687" cy="228" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="412" cy="217" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="744" cy="246" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="129" cy="297" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="567" cy="4" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="249" cy="226" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="123" cy="349" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="814" cy="41" r="1" fill="#efe8da" opacity="0.6"/>
+<circle cx="673" cy="343" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="930" cy="63" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="541" cy="29" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="216" cy="12" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="799" cy="317" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="152" cy="0" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="254" cy="279" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="99" cy="276" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="870" cy="425" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="775" cy="155" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="840" cy="51" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="473" cy="104" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="843" cy="204" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="355" cy="46" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="292" cy="409" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="747" cy="332" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="366" cy="238" r="1" fill="#efe8da" opacity="0.6"/>
+<circle cx="57" cy="123" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="250" cy="79" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="880" cy="497" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="187" cy="508" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="800" cy="59" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="931" cy="438" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="183" cy="462" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="460" cy="123" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="455" cy="368" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="905" cy="497" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="589" cy="209" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="786" cy="471" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="398" cy="263" r="1" fill="#efe8da" opacity="0.6"/>
+<circle cx="143" cy="75" r="1" fill="#efe8da" opacity="0.6"/>
+<circle cx="407" cy="531" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="267" cy="184" r="1" fill="#efe8da" opacity="0.8"/></g>
+<g id="sat" transform="translate(1100 120) scale(.3)">
+  <rect x="-160" y="-22" width="110" height="44" fill="url(#panel)" stroke="#9cc9ff" stroke-width="2"/><rect x="50" y="-22" width="110" height="44" fill="url(#panel)" stroke="#9cc9ff" stroke-width="2"/>
+  <rect x="-40" y="-40" width="80" height="80" rx="8" fill="#c9ced6" stroke="#5b6672" stroke-width="3"/><rect x="-18" y="-18" width="36" height="20" fill="#2a2f38"/>
+  <line x1="0" y1="-40" x2="0" y2="-72" stroke="#c9ced6" stroke-width="4"/><path d="M-26 -72 A26 16 0 0 1 26 -72" fill="#efe8da" stroke="#5b6672" stroke-width="2"/>
+  <circle id="nav" cx="34" cy="-34" r="5" fill="#ff5e6e" filter="url(#glow)"/>
+</g></svg>
+<script>window.scene=function(tl){
+  gsap.set('#sat',{x:1100,y:120,scale:.3,rotation:20});
+  tl.to('#sat',{x:520,y:260,scale:1.3,rotation:-6,duration:3.5,ease:'power2.out'},0);
+  tl.to('#sat',{motionPath:false,x:'+=60',y:'-=30',duration:1.2,yoyo:true,repeat:3,ease:'sine.inOut'},3.6);
+  tl.to('#nav',{opacity:.1,duration:.15,repeat:40,yoyo:true},0);
+  tl.to('#sat',{x:-200,y:60,scale:.25,rotation:30,duration:2.6,ease:'power2.in'},8.6);
+  say(tl,'.caption','a satellite comes in close to check on you',0.6,3); say(tl,'.caption','all systems fine; you too',3.8,3); say(tl,'.caption','and it goes back to work, leaving a light on',8.4,2.6);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

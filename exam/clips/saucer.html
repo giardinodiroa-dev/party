@@ -1,0 +1,92 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs>
+<radialGradient id="dome" cx="40%" cy="30%" r="70%"><stop offset="0" stop-color="#bfefff" stop-opacity=".95"/><stop offset="1" stop-color="#3a7fa8" stop-opacity=".85"/></radialGradient>
+<linearGradient id="hull" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9eef2"/><stop offset=".5" stop-color="#8e99a6"/><stop offset="1" stop-color="#3b434d"/></linearGradient>
+<radialGradient id="beam" cx="50%" cy="0" r="100%"><stop offset="0" stop-color="#5ee3e3" stop-opacity=".55"/><stop offset="1" stop-color="#5ee3e3" stop-opacity="0"/></radialGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<g id="stars"><circle cx="595" cy="22" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="585" cy="130" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="749" cy="254" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="354" cy="7" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="391" cy="136" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="834" cy="370" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="362" cy="426" r="2" fill="#efe8da" opacity="0.5"/>
+<circle cx="225" cy="374" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="324" cy="537" r="2" fill="#efe8da" opacity="0.8"/>
+<circle cx="771" cy="482" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="850" cy="29" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="360" cy="206" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="959" cy="56" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="375" cy="37" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="467" cy="189" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="173" cy="307" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="629" cy="482" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="449" cy="318" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="650" cy="40" r="2" fill="#efe8da" opacity="0.5"/>
+<circle cx="325" cy="450" r="2" fill="#efe8da" opacity="0.7"/>
+<circle cx="305" cy="211" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="735" cy="274" r="2" fill="#efe8da" opacity="0.3"/>
+<circle cx="930" cy="129" r="2" fill="#efe8da" opacity="0.6"/>
+<circle cx="617" cy="388" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="761" cy="264" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="53" cy="251" r="2" fill="#efe8da" opacity="0.3"/>
+<circle cx="611" cy="359" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="111" cy="518" r="2" fill="#efe8da" opacity="0.5"/>
+<circle cx="315" cy="534" r="2" fill="#efe8da" opacity="0.7"/>
+<circle cx="513" cy="446" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="184" cy="50" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="327" cy="483" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="461" cy="161" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="684" cy="431" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="326" cy="29" r="2" fill="#efe8da" opacity="0.6"/>
+<circle cx="818" cy="95" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="443" cy="275" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="872" cy="457" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="498" cy="220" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="575" cy="72" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="444" cy="136" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="111" cy="391" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="539" cy="186" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="356" cy="520" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="224" cy="400" r="1" fill="#efe8da" opacity="0.8"/>
+<circle cx="272" cy="140" r="1" fill="#efe8da" opacity="0.4"/>
+<circle cx="44" cy="325" r="1" fill="#efe8da" opacity="0.7"/>
+<circle cx="373" cy="451" r="1" fill="#efe8da" opacity="0.6"/>
+<circle cx="585" cy="10" r="2" fill="#efe8da" opacity="0.3"/>
+<circle cx="896" cy="242" r="2" fill="#efe8da" opacity="0.5"/>
+<circle cx="483" cy="167" r="1" fill="#efe8da" opacity="0.3"/>
+<circle cx="873" cy="502" r="2" fill="#efe8da" opacity="0.8"/>
+<circle cx="42" cy="429" r="2" fill="#efe8da" opacity="0.7"/>
+<circle cx="355" cy="70" r="2" fill="#efe8da" opacity="0.3"/>
+<circle cx="134" cy="131" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="117" cy="114" r="2" fill="#efe8da" opacity="0.5"/>
+<circle cx="23" cy="151" r="2" fill="#efe8da" opacity="0.4"/>
+<circle cx="49" cy="274" r="2" fill="#efe8da" opacity="0.7"/>
+<circle cx="389" cy="67" r="1" fill="#efe8da" opacity="0.5"/>
+<circle cx="148" cy="488" r="1" fill="#efe8da" opacity="0.4"/></g>
+<g id="ship" transform="translate(-300 220)">
+  <ellipse id="beamcone" cx="0" cy="60" rx="0" ry="0" fill="url(#beam)" opacity="0"/>
+  <ellipse cx="0" cy="22" rx="150" ry="22" fill="#1a2028"/>
+  <ellipse cx="0" cy="12" rx="160" ry="34" fill="url(#hull)"/>
+  <ellipse cx="0" cy="-6" rx="90" ry="22" fill="#5b6672"/>
+  <path d="M-70 -8 Q0 -78 70 -8Z" fill="url(#dome)"/>
+  <g id="lights"><circle class="lt" cx="140.0" cy="18.0" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="99.0" cy="33.6" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="0.0" cy="40.0" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="-99.0" cy="33.6" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="-140.0" cy="18.0" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="-99.0" cy="2.4" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="-0.0" cy="-4.0" r="6" fill="#5ee3e3" filter="url(#glow)"/>
+<circle class="lt" cx="99.0" cy="2.4" r="6" fill="#5ee3e3" filter="url(#glow)"/></g>
+</g></svg>
+<script>window.scene=function(tl){
+  gsap.set('#ship',{x:-300,y:220,scale:.6,opacity:0}); gsap.set('#beamcone',{attr:{rx:0,ry:0},opacity:0});
+  tl.to('#ship',{x:480,y:250,scale:1.2,opacity:1,duration:3.2,ease:'power2.out'},0);
+  tl.to('#ship',{y:'+=12',rotation:4,duration:.6,yoyo:true,repeat:5,ease:'sine.inOut'},0);
+  tl.to('#ship',{rotation:-10,duration:.8,ease:'power2.inOut'},3.4); tl.to('#ship',{rotation:0,duration:.8},4.4);
+  tl.to('.lt',{opacity:.2,stagger:{each:.07,repeat:30,yoyo:true},duration:.07},0);
+  tl.to('#beamcone',{attr:{rx:120,ry:260},opacity:1,duration:.9,ease:'power2.out'},5.2); tl.to('#beamcone',{opacity:0,duration:.5},7.6);
+  tl.to('#ship',{x:1400,y:80,scale:.3,duration:1.1,ease:'power4.in'},8.6);
+  say(tl,'.caption','a saucer comes in, wobbling, and stops to look at you',0.8,3); say(tl,'.caption','the beam says hello',5.4,2.6); say(tl,'.caption','and it is gone before you can wave',8.4,2);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

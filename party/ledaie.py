@@ -43,6 +43,8 @@ def load(path: Path = DICTIONARY) -> list[Entry]:
                 meaning = syn or defn.split(".")[0]
                 if len(meaning) > 70:
                     meaning = meaning[:67].rstrip() + "…"
+                if not meaning:
+                    continue                                   # no definition in the CSV yet: it waits until there is one
                 out.append(Entry(word, meaning))
     except OSError:
         pass
@@ -58,12 +60,22 @@ class LedaieWords:
         self.gap = 20.0
         self.next_at = 9.0
         self.current: tuple[Entry, str, float, float, float, float] | None = None   # entry, kind, t0, dur, x, y
+        self.auto = True
+
+    @property
+    def active(self) -> bool:
+        return self.current is not None or getattr(self, "force", False)
+
+    def begin(self, t: float) -> None:
+        self.next_at = t
+        self.force = True                     # start on the very next frame, whatever the clock says
 
     def frame(self, t: float) -> Show | None:
         if not self.entries:
             return None
         if self.current is None:
-            if t >= self.next_at:
+            if t >= self.next_at and (self.auto or getattr(self, "force", False)):
+                self.force = False
                 e = self.rng.choice(self.entries)
                 kind = "symbol" if self.rng.random() < 0.4 else "word"
                 self.current = (e, kind, t, self.rng.uniform(6.0, 9.0), self.rng.uniform(0.2, 0.8), self.rng.uniform(0.2, 0.7))
