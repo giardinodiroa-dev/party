@@ -259,8 +259,13 @@ STORIES: list[tuple[str, str]] = [
     ("tree", "a tree of life, birds asleep in its branches"),
     ("tree", "a tree grows a ring for every song you played"),
     ("tree", "a tree that remembers every name whispered under it"),
+    ("satellite", "a satellite comes in close to check on you, then goes back to work"),
+    ("satellite", "a satellite hovers at the window for a moment: all systems fine, you too"),
+    ("satellite", "a satellite visits, blinks twice, and takes the long way home"),
+    ("satellite", "a satellite slows down beside you like an old friend on a bike"),
+    ("satellite", "a satellite orbits you once, quietly, and leaves a light on"),
 ]
-PATHS = ["pass_lr", "pass_rl", "drift_down", "orbit", "appear", "zoom", "approach", "recede", "weave"]
+PATHS = ["pass_lr", "pass_rl", "drift_down", "orbit", "appear", "zoom", "approach", "recede", "weave", "visit"]
 HOLY = {"angel", "jesus", "dove", "phoenix", "crown"}
 VANISH = (0.5, 0.42)
 
@@ -353,8 +358,11 @@ class Stories:
                 holy = [st for st in pool if st[0] in HOLY]
                 if kind not in HOLY and holy and self.rng.random() < 0.35:   # the holy ones come round twice as often
                     kind, caption = self.rng.choice(holy)
-                close = ["approach", "zoom", "recede"]
-                path = self.rng.choice(close) if self.rng.random() < 0.45 else self.rng.choice(PATHS)   # close-ups rock
+                if kind != "satellite" and self.rng.random() < 0.12:                       # the satellite visits often
+                    kind, caption = self.rng.choice([st for st in pool if st[0] == "satellite"] or [(kind, caption)])
+                close = ["approach", "zoom", "recede", "visit"]
+                path = "visit" if (kind == "satellite" and self.rng.random() < 0.6) else (
+                    self.rng.choice(close) if self.rng.random() < 0.45 else self.rng.choice(PATHS))   # close-ups rock
                 self.current = (kind, caption, path, t, self.rng.uniform(9.0, 16.0), self.rng.uniform(0.15, 0.75))
                 self.played += 1
             return None
@@ -399,6 +407,20 @@ class Stories:
             z = 1.0 + 0.7 * math.sin(u * math.tau * 1.5)
             ax = -0.1 + 1.2 * u
             x, y, s = VANISH[0] + (ax - VANISH[0]) / z, VANISH[1] + (lane - VANISH[1]) / z, 1.0 / z
+        elif path == "visit":                      # a visit: fly in, hover close, orbit away
+            ax, ay = 0.25 + lane * 0.5, 0.35 + 0.25 * (lane * 7 % 1)
+            if u < 0.35:
+                z = 4.0 - 3.2 * (u / 0.35)
+                x, y = VANISH[0] + (ax - VANISH[0]) / z, VANISH[1] + (ay - VANISH[1]) / z
+            elif u < 0.7:
+                z = 0.8; a = (u - 0.35) / 0.35 * math.tau
+                x, y = ax + 0.06 * math.cos(a), ay + 0.04 * math.sin(a)
+            else:
+                v = (u - 0.7) / 0.3; z = 0.8 + 3.2 * v; a = v * math.pi
+                bx, by = ax + 0.25 * math.sin(a), ay - 0.15 * v
+                x, y = VANISH[0] + (bx - VANISH[0]) / z, VANISH[1] + (by - VANISH[1]) / z
+            s = 1.0 / z
+            fade = min(1.0, u * 3.0, (1.0 - u) * 2.5) * min(1.0, 2.0 / z)
         else:
             x, y, s = lane, 0.5, 1.0
         if path in ("pass_lr", "pass_rl", "drift_down"):   # even the flat paths breathe in depth

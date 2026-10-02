@@ -59,3 +59,9 @@ a mental health project… I also want other aesthetics not cute… 33 year old 
 and the astral realm… not angels and jesus idol images". Built: ASTRAL default + CUTE switch,
 per-actor DRAWING/PAINTING/HIDDEN with both thumbnails + fetch button, angel/jesus hidden by
 default, close-ups 45%, slower fades.
+
+His words (2026-10-02): "cute mode don't remove it… add cute visuals as well as an option don't
+switch me to them… creamy colors no glows, lala land vibes pink… my wife will love it… add
+satellites… flew in came close and then orbited away… feels like a visit… more svg drawings…
+other aesthetics ghibli dark, electric, voidblack magical hollow". Built: LALA + PASTEL + cute/astral
+profiles, visit path + satellite weighting + 5 stories, DARK/ELECTRIC/HOLLOW styles.

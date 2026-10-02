@@ -262,7 +262,7 @@ class MainWindow(QWidget):
         self.bar_fill = min(0.95, max(0.15, float(state.get("bar_fill", 0.4))))
         self.ledaie_on = bool(state.get("ledaie_on", True))
         self.constellations_on = bool(state.get("constellations_on", True))
-        self.sprite_style = "CUTE" if state.get("sprite_style") == "CUTE" else "ASTRAL"
+        self.sprite_style = state.get("sprite_style") if state.get("sprite_style") in ("ASTRAL", "CUTE", "DARK", "ELECTRIC", "HOLLOW") else "ASTRAL"
         self.sources = self.default_sources()
         for k in state.get("hidden_actors", []) or []:          # older saves
             self.sources[str(k)] = "hidden"
@@ -499,6 +499,11 @@ class MainWindow(QWidget):
     # -- profiles: "what I like", by name ---------------------------------------
     def profile_names(self) -> list[str]:
         PROFILES.mkdir(exist_ok=True)
+        for name in ("cute", "astral"):                      # built-in looks; never overwritten once they exist
+            src = ROOT / "profiles" / f"{name}.json"
+            dst = PROFILES / f"{name}.json"
+            if src.exists() and not dst.exists() and src != dst:
+                dst.write_text(src.read_text())
         return sorted(p.stem for p in PROFILES.glob("*.json"))
 
     def save_profile(self, name: str) -> None:

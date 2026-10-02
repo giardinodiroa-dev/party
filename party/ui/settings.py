@@ -222,9 +222,12 @@ class SettingsPanel(QWidget):
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         body = QWidget(); body.setMinimumWidth(0); grid = QGridLayout(body); grid.setSpacing(6)
         self.tabs.addTab(area, "IMAGES"); area.setWidget(body)
-        style = QComboBox(); style.addItems(["ASTRAL  (glowing line art)", "CUTE  (the anime drawings)"])
-        style.currentIndexChanged.connect(lambda i: (self._set("sprite_style", ("ASTRAL", "CUTE")[i]), self._rethumb()))
-        self._binders.append(lambda: style.setCurrentIndex(1 if self.win.sprite_style == "CUTE" else 0))
+        from .ghibli import STYLES
+        names = {"ASTRAL": "ASTRAL  (glowing line art)", "CUTE": "CUTE  (creamy anime)", "DARK": "DARK  (ghibli dark inks)",
+                 "ELECTRIC": "ELECTRIC  (neon strokes)", "HOLLOW": "HOLLOW  (voidblack magical)"}
+        style = QComboBox(); style.addItems([names[s_] for s_ in STYLES])
+        style.currentIndexChanged.connect(lambda i: (self._set("sprite_style", STYLES[i]), self._rethumb()))
+        self._binders.append(lambda: style.setCurrentIndex(STYLES.index(self.win.sprite_style) if self.win.sprite_style in STYLES else 0))
         grid.addWidget(QLabel("drawing style"), 0, 0); grid.addWidget(style, 0, 1, 1, 2)
         fetch = QPushButton("FETCH MISSING PAINTINGS"); self.fetch_status = QLabel(""); self.fetch_status.setObjectName("hint")
         fetch.clicked.connect(self._fetch); grid.addWidget(fetch, 1, 0, 1, 2); grid.addWidget(self.fetch_status, 1, 2)
@@ -255,7 +258,7 @@ class SettingsPanel(QWidget):
         from .ghibli import render
         from PyQt6.QtGui import QImage
         for kind, (d, p_, _) in self._cards.items():
-            img = render(kind, 64) if self.win.sprite_style == "CUTE" else draw_sprite(kind).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            img = draw_sprite(kind).scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation) if self.win.sprite_style == "ASTRAL" else render(kind, 64, self.win.sprite_style)
             d.setPixmap(QPixmap.fromImage(img) if img is not None else QPixmap())
             f = self.art.pick(kind)
             if f:

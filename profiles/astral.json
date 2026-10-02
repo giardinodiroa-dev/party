@@ -1,0 +1,47 @@
+{
+  "mode": "PULSE",
+  "sensitivity": 1.0,
+  "hotreload": true,
+  "aura": true,
+  "aura_width": 2.0,
+  "aura_bold": false,
+  "aura_astral": true,
+  "aura_color": 0,
+  "aura_border": 0,
+  "aura_ghost": true,
+  "aura_waves": 1,
+  "aura_shape": 1,
+  "aura_bright": 1.0,
+  "aura_lens": false,
+  "aura_brainwash": true,
+  "aura_stories": true,
+  "aura_edges": 1,
+  "aura_barcolor": 2,
+  "story_gap": 20.0,
+  "phrase_gap": 5.0,
+  "phrase_font": "MONO",
+  "phrase_color": 0,
+  "phrase_size": 1,
+  "phrase_anim": 0,
+  "bar_height": 0.1,
+  "bar_fill": 0.4,
+  "phrase_custom": [
+    200.0,
+    0.8
+  ],
+  "ledaie_on": true,
+  "ledaie_font": "MONO",
+  "ledaie_color": 5,
+  "ledaie_custom": [
+    45.0,
+    0.8
+  ],
+  "caption_font": "MONO",
+  "caption_color": 0,
+  "caption_custom": [
+    200.0,
+    0.85
+  ],
+  "constellations_on": true,
+  "sprite_style": "ASTRAL"
+}

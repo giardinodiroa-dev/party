@@ -362,9 +362,9 @@ class TextureCache:
 
     def sprite(self, kind: str, style: str = "ASTRAL") -> tuple[int, int, int]:
         def make():
-            if style == "CUTE":
+            if style != "ASTRAL":
                 from .ghibli import render
-                img = render(kind)
+                img = render(kind, 256, style)
                 if img is not None:
                     return img
             return draw_sprite(kind)

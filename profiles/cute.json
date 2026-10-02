@@ -1,0 +1,47 @@
+{
+  "mode": "ORBS",
+  "sensitivity": 1.0,
+  "hotreload": true,
+  "aura": true,
+  "aura_width": 1.6,
+  "aura_bold": false,
+  "aura_astral": true,
+  "aura_color": 7,
+  "aura_border": 9,
+  "aura_ghost": true,
+  "aura_waves": 2,
+  "aura_shape": 1,
+  "aura_bright": 0.9,
+  "aura_lens": false,
+  "aura_brainwash": true,
+  "aura_stories": true,
+  "aura_edges": 1,
+  "aura_barcolor": 7,
+  "story_gap": 20.0,
+  "phrase_gap": 5.0,
+  "phrase_font": "SANS",
+  "phrase_color": 7,
+  "phrase_size": 1,
+  "phrase_anim": 1,
+  "bar_height": 0.08,
+  "bar_fill": 0.5,
+  "phrase_custom": [
+    330.0,
+    0.85
+  ],
+  "ledaie_on": true,
+  "ledaie_font": "SANS",
+  "ledaie_color": 7,
+  "ledaie_custom": [
+    330.0,
+    0.85
+  ],
+  "caption_font": "SANS",
+  "caption_color": 7,
+  "caption_custom": [
+    330.0,
+    0.85
+  ],
+  "constellations_on": true,
+  "sprite_style": "CUTE"
+}

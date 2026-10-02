@@ -76,3 +76,11 @@ IMAGES tab shows every actor with both its drawing and its painting and a choice
 DRAWING, PAINTING or HIDDEN. Paintings (`art/`) get a vignette so edges fade to nothing, like the
 dove. Default: painting where one exists, drawing otherwise, angel and Jesus hidden. FETCH MISSING
 PAINTINGS asks Pollinations for the rest (free tier: a few per minute). Nothing is ever deleted.
+
+## Looks and profiles
+
+Built-in profiles in PROFILES: `astral` (the default look) and `cute` (creamy LALA colours, PASTEL
+no-glow borders, cute drawings, sans fonts, pink text). Nothing switches you; load what you want.
+Drawing styles: ASTRAL, CUTE, DARK (ghibli-dark inks), ELECTRIC (neon strokes), HOLLOW (voidblack
+magical). DARK/ELECTRIC/HOLLOW are the same geometry restyled, faces removed. The satellite visits:
+flies in, hovers close for a slow circle, orbits away; it comes round often.

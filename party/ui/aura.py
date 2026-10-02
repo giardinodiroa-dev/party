@@ -21,7 +21,7 @@ from PyQt6.QtOpenGL import QOpenGLFramebufferObject, QOpenGLShader, QOpenGLShade
 
 from ..analysis import N_BINS
 
-COLOR_MODES = ["PEARL", "MONO", "RAINBOW", "FIRE", "ICE", "HOLY", "AURORA"]
+COLOR_MODES = ["PEARL", "MONO", "RAINBOW", "FIRE", "ICE", "HOLY", "AURORA", "LALA"]
 PHRASE_ANIMS = ["FADE", "PULSE", "RISE", "TYPE", "FLASH"]
 PHRASE_FONT_NAMES = ["MONO", "SERIF", "SANS", "HANDSCRIPT"]
 
@@ -44,11 +44,14 @@ def phrase_tint(mode: int, hue: float, t: float, custom: tuple[float, float] = (
     elif mode == 6:
         b = 0.5 + 0.5 * math.sin(t * 0.7)
         c = QColor.fromRgbF(0.2 + 0.4 * b, 0.9 - 0.5 * b, 0.5 + 0.5 * b)
+    elif mode == 7:
+        k = t * 0.4
+        c = QColor.fromRgbF(1.0, 0.80 + 0.1 * math.sin(k), 0.88 + 0.08 * math.sin(k + 2.0))
     else:
         k = t * 0.3
         c = QColor.fromRgbF(0.85 + 0.15 * math.sin(k), 0.85 + 0.15 * math.sin(k + 2.1), 0.9 + 0.1 * math.sin(k + 4.2))
     return c.redF(), c.greenF(), c.blueF()
-BORDER_STYLES = ["SOFT", "NEON", "DOUBLE", "OUTLINE", "ELECTRIC", "SHADOW", "WATER", "GHOST", "FIRE"]
+BORDER_STYLES = ["SOFT", "NEON", "DOUBLE", "OUTLINE", "ELECTRIC", "SHADOW", "WATER", "GHOST", "FIRE", "PASTEL"]
 WAVE_STYLES = ["OFF", "ELECTRIC", "AQUA", "FIRE", "GHOST", "MAGIC"]
 EDGE_PRESETS = [(1, "BOTTOM"), (15, "ALL"), (2, "TOP"), (12, "SIDES"), (3, "TOP+BOTTOM")]
 
@@ -118,6 +121,7 @@ vec3 palette(int mode, float t, float k){
   if (mode == 4) return mix(vec3(0.2, 0.5, 1.0), vec3(0.85, 1.0, 1.0), k);
   if (mode == 5) return mix(vec3(1.0, 0.72, 0.25), vec3(1.0, 0.98, 0.85), k);
   if (mode == 6) { float b = 0.5 + 0.5 * sin(t * 12.0 + time * 0.5); return mix(vec3(0.2, 1.0, 0.5), vec3(0.6, 0.3, 1.0), b); }
+  if (mode == 7) { vec3 c = 0.84 + 0.16 * cos(6.28318 * (t + vec3(0.0, 0.18, 0.36))); return mix(c, vec3(1.0, 0.86, 0.93), 0.35); }   // LALA: creamy pinks
   return pearl(t);
 }
 // border styles: h = blurred edge map (soft distance to the nearest stroke); hs = shifted copy; hu = copy from below
@@ -138,6 +142,10 @@ float ring(int style, float h, float hs, float hu, vec2 px, out vec3 tint, out f
     tint = vec3(0.85, 0.85, 1.0); tintAmt = 0.6;
     float wisp = 0.5 + 0.5 * fbm(px * 0.02 + vec2(time * 0.3, -time * 0.6));
     return (h * wisp + hu * 0.6 * wisp) * (0.75 + 0.25 * sin(time * 1.1 + px.x * 0.01));
+  }
+  if (style == 9) {                                                                   // PASTEL: a thin soft band, no glow at all
+    tint = vec3(1.0, 0.86, 0.92); tintAmt = 0.5;
+    return smoothstep(0.10, 0.16, h) * (1.0 - smoothstep(0.16, 0.26, h)) * 1.1;
   }
   if (style == 8) {                                                                   // FIRE: flames rising off every stroke
     float flame = fbm(px * vec2(0.06, 0.035) + vec2(0.0, time * 3.0));

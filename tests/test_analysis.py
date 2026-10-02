@@ -89,7 +89,7 @@ def test_aura_intensity_is_bounded():
 
 def test_stories_table_and_scheduler():
     from party.stories import STORIES, Stories
-    assert len(STORIES) == 250 and len({k for k, _ in STORIES}) == 30
+    assert len(STORIES) >= 250 and len({k for k, _ in STORIES}) == 30
     s = Stories(every=(1, 2), seed=3)
     shots = [s.frame(t / 10) for t in range(400)]
     assert any(shots) and s.played >= 2

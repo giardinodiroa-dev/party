@@ -33,20 +33,20 @@ def svg(body: str) -> str:
 
 
 def eyes(x1: float, x2: float, y: float, r: float = 11) -> str:
-    out = ""
+    out = '<g class="face">'
     for x in (x1, x2):
         out += (f'<circle cx="{x}" cy="{y}" r="{r}" fill="{OUT}"/>'
                 f'<circle cx="{x - r * .32}" cy="{y - r * .35}" r="{r * .36}" fill="{WHITE}"/>'
                 f'<circle cx="{x + r * .3}" cy="{y + r * .3}" r="{r * .16}" fill="{WHITE}" opacity=".8"/>')
-    return out
+    return out + "</g>"
 
 
 def blush(x1: float, x2: float, y: float, r: float = 9) -> str:
-    return "".join(f'<ellipse cx="{x}" cy="{y}" rx="{r}" ry="{r * .6}" fill="{BLUSH}" opacity=".75"/>' for x in (x1, x2))
+    return '<g class="face">' + "</g>" if False else '<g class="face">' + "".join(f'<ellipse cx="{x}" cy="{y}" rx="{r}" ry="{r * .6}" fill="{BLUSH}" opacity=".75"/>' for x in (x1, x2)) + "</g>"
 
 
 def smile(x: float, y: float, w: float = 14) -> str:
-    return f'<path d="M{x - w} {y} Q{x} {y + w * .9} {x + w} {y}" fill="none" {STROKE} stroke-width="3"/>'
+    return f'<g class="face"><path d="M{x - w} {y} Q{x} {y + w * .9} {x + w} {y}" fill="none" {STROKE} stroke-width="3"/></g>'
 
 
 def sparkle(x: float, y: float, s: float = 8, color: str = WHITE) -> str:
@@ -264,6 +264,44 @@ ACTORS: dict[str, str] = {
 }
 
 
+STYLES = ["ASTRAL", "CUTE", "DARK", "ELECTRIC", "HOLLOW"]
+_PALETTE = [CREAM, SKY, DEEP, SAGE, BLUSH, STRAW, LILAC, NIGHT, WHITE, PEACH, SOOT, GOLD, CORAL, LEAF, ROSE, MINT]
+_DARK = ["#2a2d3e", "#2f5d6b", "#1f3f4d", "#3f5a3a", "#6b3a4a", "#8a6d2a", "#4b3f6b", "#15161f", "#cfc9be", "#7a5a46", "#0b0b0e", "#b08a3a", "#8a3a3a", "#3c5a32", "#7a3f5e", "#3f6b63"]
+_HOLLOW = ["#07070a"] * 8 + ["#efe8da", "#07070a", "#07070a", "#07070a", "#07070a", "#07070a", "#07070a", "#07070a"]
+NEON_DEFS = ('<filter id="neon" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="b"/>'
+             '<feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>')
+
+
+def restyle(text: str, style: str) -> str:
+    """The same geometry, another aesthetic. Faces are only for CUTE."""
+    import re
+    if style == "CUTE":
+        return text
+    text = re.sub(r'<g class="face">.*?</g>', "", text, flags=re.S)
+    if style == "DARK":                                   # ghibli dark: deep inks, moss and wine, soft shadow
+        for a_, b_ in zip(_PALETTE, _DARK):
+            text = text.replace(f'"{a_}"', f'"{b_}"')
+        text = text.replace(f'stroke="{OUT}"', 'stroke="#0b0b0e"')
+        return text.replace("</defs>", NEON_DEFS.replace('id="neon"', 'id="shade"').replace("3", "5") + "</defs>").replace(
+            DEFS.split("</defs>")[0][:0] + "<svg", "<svg").replace("</defs>", "</defs><g opacity=\".92\">", 1).replace("</svg>", "</g></svg>")
+    if style == "ELECTRIC":                               # neon strokes on nothing, chromatic double edge
+        for a_ in _PALETTE:
+            text = text.replace(f'"{a_}"', '"#061018"')
+        text = text.replace(f'stroke="{OUT}"', 'stroke="#5ee3ff"').replace('stroke-width="4"', 'stroke-width="3"')
+        body = text.split("</defs>", 1)[1].rsplit("</svg>", 1)[0]
+        ghost = body.replace('stroke="#5ee3ff"', 'stroke="#ff5ec8"')
+        return text.replace("</defs>", NEON_DEFS + "</defs>").replace(body, f'<g transform="translate(2 1)" opacity=".55">{ghost}</g><g filter="url(#neon)">{body}</g>')
+    if style == "HOLLOW":                                 # voidblack magical hollow: void fills, thin gold-teal edges, inner glow
+        for a_, b_ in zip(_PALETTE, _HOLLOW):
+            text = text.replace(f'"{a_}"', f'"{b_}"')
+        text = text.replace(f'stroke="{OUT}"', 'stroke="#e8c36a"').replace('stroke-width="4"', 'stroke-width="2.2"')
+        text = text.replace('fill="url(#hl)"', 'fill="url(#inner)"')
+        inner = '<radialGradient id="inner" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#5ee3e3" stop-opacity=".35"/><stop offset="1" stop-color="#5ee3e3" stop-opacity="0"/></radialGradient>'
+        body = text.split("</defs>", 1)[1].rsplit("</svg>", 1)[0]
+        return text.replace("</defs>", inner + NEON_DEFS + "</defs>").replace(body, f'<g filter="url(#neon)">{body}</g>')
+    return text
+
+
 def ensure_files(root: Path = SPRITES_DIR) -> None:
     """Write our drawings once; a file that exists is his and is never overwritten."""
     root.mkdir(parents=True, exist_ok=True)
@@ -273,10 +311,13 @@ def ensure_files(root: Path = SPRITES_DIR) -> None:
             f.write_text(text)
 
 
-def render(kind: str, size: int = 256, root: Path = SPRITES_DIR) -> QImage | None:
-    """His SVG (assets/sprites/<kind>.svg) if present, else ours; None if the actor has neither."""
+def render(kind: str, size: int = 256, style: str = "CUTE", root: Path = SPRITES_DIR) -> QImage | None:
+    """His SVG (assets/sprites/<kind>.svg) if present, else ours, restyled for DARK / ELECTRIC / HOLLOW."""
     f = root / f"{kind}.svg"
-    r = QSvgRenderer(str(f)) if f.exists() else (QSvgRenderer(ACTORS[kind].encode()) if kind in ACTORS else None)
+    text = f.read_text() if f.exists() else ACTORS.get(kind)
+    if text is None:
+        return None
+    r = QSvgRenderer(restyle(text, style).encode())
     if r is None or not r.isValid():
         return None
     img = QImage(size, size, QImage.Format.Format_ARGB32_Premultiplied)
