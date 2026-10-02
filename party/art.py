@@ -1,9 +1,9 @@
 """Real paintings for the story actors.
 
-Each actor gets `art/<actor>.png` (or any `art/<actor>-*.png` he drops in — his own
-art always wins). Missing ones are painted once by Pollinations on a background
-thread, asked for on a pure black ground so black can be keyed to transparency.
-Until a painting lands, the line-art sprite stands in. Pure Python, no Qt.
+Paintings are OPTIONAL now (he found the generated ones poor): the drawings in
+ghibli.py are the default. If "use paintings" is on, `art/<actor>.png|jpg` (or
+`art/<actor>-*.png`) is shown instead — his own files. Fetching is off by default;
+`Art(root, fetch=True)` would resume the Pollinations fill. Pure Python, no Qt.
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 
 
 class Art:
-    def __init__(self, root: Path, fetch: bool = True) -> None:
+    def __init__(self, root: Path, fetch: bool = False) -> None:
         self.root = root
         self.root.mkdir(parents=True, exist_ok=True)
         self.failed: dict[str, str] = {}

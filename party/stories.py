@@ -343,13 +343,16 @@ class Stories:
         self.next_at = 6.0
         self.current: tuple[str, str, str, float, float, float] | None = None   # kind, caption, path, t0, dur, lane
         self.played = 0
+        self.hidden: set[str] = set()         # actors he hid in the gallery
 
     def frame(self, t: float) -> Shot | None:
         if self.current is None:
             if t >= self.next_at:
-                kind, caption = self.rng.choice(STORIES)
-                if kind not in HOLY and self.rng.random() < 0.35:      # the holy ones come round twice as often
-                    kind, caption = self.rng.choice([st for st in STORIES if st[0] in HOLY])
+                pool = [st for st in STORIES if st[0] not in self.hidden] or STORIES
+                kind, caption = self.rng.choice(pool)
+                holy = [st for st in pool if st[0] in HOLY]
+                if kind not in HOLY and holy and self.rng.random() < 0.35:   # the holy ones come round twice as often
+                    kind, caption = self.rng.choice(holy)
                 path = self.rng.choice(PATHS)
                 self.current = (kind, caption, path, t, self.rng.uniform(8.0, 14.0), self.rng.uniform(0.15, 0.75))
                 self.played += 1

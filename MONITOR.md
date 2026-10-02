@@ -45,3 +45,9 @@ His words (2026-10-02, later asks): bars on edges he chooses, slim bars, bar col
 story/phrase pace, Ledaie symbols + dictionary words, phrase fonts/colours/animations, depth
 motion, more drawings, real constellations, visible ghosts/angels, and "a proper settings pop up
 to do this comfortably" with many fonts and text colours. Built: all; settings panel = X.
+
+His words (2026-10-02): "check which images are appearing… a space in the settings where I can
+delete some… pollinations in general suck let's stay with the svgs… anime drawings ghibli style"
+then "the only good pollinations ones were the ones where you can't tell the borders like the dove…
+also the spaceship". Built: IMAGES tab (show/paint per actor, hide not delete), 30 SVG drawings,
+fetch off, vignette on paintings, dove + ufo paintings on by default.

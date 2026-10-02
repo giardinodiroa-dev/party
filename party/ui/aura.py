@@ -482,7 +482,8 @@ class AuraWindow(QOpenGLWindow):
                       "phrase_font": "MONO", "phrase_color": 0, "phrase_size": 1, "phrase_anim": 0,
                       "phrase_custom": (200.0, 0.8), "ledaie": True, "ledaie_font": "MONO", "ledaie_color": 5,
                       "ledaie_custom": (45.0, 0.8), "caption_font": "MONO", "caption_color": 0,
-                      "caption_custom": (200.0, 0.85), "constellations": True}
+                      "caption_custom": (200.0, 0.85), "constellations": True,
+                      "use_art": False, "hidden": [], "art_actors": ["dove", "ufo"]}
         self.timer = QTimer(self); self.timer.timeout.connect(self.update)
         self._slow = 0
         self._t0 = time.monotonic()
@@ -506,7 +507,9 @@ class AuraWindow(QOpenGLWindow):
             self.stories = Stories()
             self.brainwash = Brainwash(self.root / "brainwash")
             from ..art import Art
-            self.art = Art(self.root / "art")
+            self.art = Art(self.root / "art", fetch=False)
+            from .ghibli import ensure_files
+            ensure_files()
             from ..ledaie import LedaieWords
             self.ledaie = LedaieWords()
             from ..stories import Constellations
@@ -545,9 +548,11 @@ class AuraWindow(QOpenGLWindow):
                     lt, lw, lh = self.textures.text(f"{show.word}  ·  {show.meaning}", 22, led_font)
                     out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * 0.8, led_tint))
         if self.flags["stories"]:
+            self.stories.hidden = set(self.flags["hidden"])
             shot = self.stories.frame(t)
             if shot is not None:
-                painting = self.art.pick(shot.kind) if self.art is not None else None
+                wants_art = self.flags["use_art"] or shot.kind in self.flags["art_actors"]
+                painting = self.art.pick(shot.kind) if (self.art is not None and wants_art) else None
                 got = self.textures.art(str(painting)) if painting else None
                 if got is not None:
                     tex, w, h = got

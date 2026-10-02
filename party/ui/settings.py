@@ -4,8 +4,8 @@ inside the app). Every control is bound live to the window — change it, see it
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFontDatabase
-from PyQt6.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget,
+from PyQt6.QtGui import QFontDatabase, QPixmap
+from PyQt6.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget,
                              QPushButton, QScrollArea, QSlider, QTabWidget, QVBoxLayout, QWidget)
 
 from .. import theme
@@ -76,6 +76,7 @@ class SettingsPanel(QWidget):
         self._build_bars()
         self._build_brainwash()
         self._build_stories()
+        self._build_images()
         self._build_profiles()
         self.hide()
 
@@ -206,6 +207,53 @@ class SettingsPanel(QWidget):
         self.colour(f, "Ledaie colour", "ledaie_color", "ledaie_custom")
         self.font(f, "caption font", "caption_font", PHRASE_FONT_NAMES)
         self.colour(f, "caption colour", "caption_color", "caption_custom")
+
+    def _build_images(self) -> None:
+        """Every drawing that can appear, with a SHOW box. Hidden ones never appear; nothing is deleted."""
+        area = QScrollArea(); area.setWidgetResizable(True)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        body = QWidget(); body.setMinimumWidth(0); grid = QGridLayout(body); grid.setSpacing(6)
+        self.tabs.addTab(area, "IMAGES"); area.setWidget(body)
+        top = QCheckBox("paintings for every actor that has one (~/party/art/)")
+        top.toggled.connect(lambda b: self._set("use_art", bool(b)))
+        self._binders.append(lambda: top.setChecked(bool(self.win.use_art)))
+        grid.addWidget(top, 0, 0, 1, 3)
+        hint = QLabel("SHOW: untick to hide an actor · PAINT: use its painting (edges fade, no border) instead of the drawing · files stay in ~/party/assets/sprites/ and ~/party/art/ (edit or delete them yourself)")
+        hint.setObjectName("hint"); hint.setWordWrap(True); grid.addWidget(hint, 1, 0, 1, 3)
+        from ..stories import STORIES
+        from .ghibli import render
+        from ..art import Art
+        art = Art(self.win.__class__.__module__ and __import__("pathlib").Path(__file__).resolve().parents[2] / "art", fetch=False)
+        actors = sorted({k for k, _ in STORIES})
+        self._thumbs: dict[str, QLabel] = {}
+        for i, kind in enumerate(actors):
+            card = QWidget(); col = QVBoxLayout(card); col.setContentsMargins(2, 2, 2, 2); col.setSpacing(2)
+            pic = QLabel(); pic.setFixedSize(84, 84); pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            img = render(kind, 84)
+            if img is not None:
+                pic.setPixmap(QPixmap.fromImage(img))
+            self._thumbs[kind] = pic
+            box = QCheckBox(f"show {kind}")
+            def on(b, kind=kind):
+                if self._syncing:
+                    return
+                hidden = set(self.win.hidden_actors)
+                hidden.discard(kind) if b else hidden.add(kind)
+                self.win.hidden_actors = sorted(hidden); self.win._changed()
+            box.toggled.connect(on)
+            self._binders.append(lambda box=box, kind=kind: box.setChecked(kind not in self.win.hidden_actors))
+            paint = QCheckBox("paint")
+            paint.setEnabled(bool(art.files(kind)))
+            def onp(b, kind=kind):
+                if self._syncing:
+                    return
+                chosen = set(self.win.art_actors)
+                chosen.add(kind) if b else chosen.discard(kind)
+                self.win.art_actors = sorted(chosen); self.win._changed()
+            paint.toggled.connect(onp)
+            self._binders.append(lambda paint=paint, kind=kind: paint.setChecked(kind in self.win.art_actors))
+            col.addWidget(pic); col.addWidget(box); col.addWidget(paint)
+            grid.addWidget(card, 2 + i // 3, i % 3)
 
     def _build_profiles(self) -> None:
         f = self._tab("PROFILES")

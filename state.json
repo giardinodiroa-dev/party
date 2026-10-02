@@ -44,6 +44,12 @@
     0.85
   ],
   "constellations_on": true,
+  "use_art": false,
+  "hidden_actors": [],
+  "art_actors": [
+    "dove",
+    "ufo"
+  ],
   "profile": "",
   "hotreload": true,
   "geometry": "01d9d0cb00030000000000cb000000680000048a00000297000000cb000000680000048a0000029700000000000000000556000000cb000000680000048a00000297"

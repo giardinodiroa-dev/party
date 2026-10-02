@@ -311,6 +311,10 @@ def black_keyed(img: QImage) -> QImage:
     a = a.reshape(h, img.bytesPerLine() // 4, 4)[:, :w, :].astype(np.float32) / 255.0
     luma = a[:, :, :3].max(axis=2)
     alpha = np.clip((luma - 0.06) / 0.5, 0.0, 1.0)            # soft key: faint glow stays faint
+    # vignette: the last 22% toward every edge fades to nothing, so a painting never shows a border
+    yy = np.linspace(0, 1, h)[:, None]; xx = np.linspace(0, 1, w)[None, :]
+    edge = np.minimum(np.minimum(xx, 1 - xx), np.minimum(yy, 1 - yy)) / 0.22
+    alpha = alpha * np.clip(edge, 0.0, 1.0) ** 1.5
     out = np.empty((h, w, 4), dtype=np.uint8)
     out[:, :, :3] = (a[:, :, :3] * alpha[:, :, None] * 255).astype(np.uint8)
     out[:, :, 3] = (alpha * 255).astype(np.uint8)
@@ -344,7 +348,11 @@ class TextureCache:
         self.limit = limit
 
     def sprite(self, kind: str) -> tuple[int, int, int]:
-        return self._get(("sprite", kind), lambda: draw_sprite(kind))
+        def make():
+            from .ghibli import render
+            img = render(kind)
+            return img if img is not None else draw_sprite(kind)
+        return self._get(("sprite", kind), make)
 
     def art(self, path: str, max_px: int = 512) -> tuple[int, int, int] | None:
         """A painting on black, keyed to light. None if the file does not load."""

@@ -67,3 +67,12 @@ the crown come round about twice as often as the rest.
 PROFILES. Every control applies at once and is saved. Any installed font can be chosen for
 phrases, Ledaie lines and captions; each text role has a colour world or a CUSTOM hue and
 lightness. Bars: style, shape, colour, height, slimness and which edges. Esc closes the panel.
+
+## Drawings and the IMAGES tab
+
+The story actors are hand-authored SVG drawings in a soft anime style (`assets/sprites/<actor>.svg`,
+rendered with QtSvg). Edit a file and the story shows your version; code never overwrites a file
+that exists. Pollinations fetching is off. The IMAGES tab in settings shows every actor with a
+SHOW box (hidden actors never appear; nothing is deleted) and a PAINT box that uses the actor's
+painting from `art/` instead, with a vignette so edges always fade to nothing. Dove and the
+saucer use their paintings by default.
