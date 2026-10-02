@@ -385,6 +385,35 @@ class TextureCache:
     def text(self, text: str, px: int, family: str = "MONO") -> tuple[int, int, int]:
         return self._get(("text", text, px, family), lambda: draw_text(text, px, True, family))
 
+    def dynamic(self, key: str, img: QImage) -> tuple[int, int, int]:
+        """A texture that changes every frame (a rig pose): re-uploaded in place."""
+        img = img.convertToFormat(QImage.Format.Format_RGBA8888_Premultiplied)
+        w, h = img.width(), img.height()
+        buf = np.frombuffer(img.constBits().asarray(h * img.bytesPerLine()), dtype=np.uint8)
+        buf = np.ascontiguousarray(buf.reshape(h, img.bytesPerLine() // 4, 4)[:, :w, :])
+        k = ("dyn", key)
+        if k in self.items and self.items[k][1] == w and self.items[k][2] == h:
+            tex = self.items[k][0]
+            gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+            gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, buf)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, 0)
+            return self.items[k]
+        entry = upload(img)
+        self.items[k] = entry
+        return entry
+
+    def glow(self) -> tuple[int, int, int]:
+        """A soft radial glow disc, for thrusters, exhaust and sparks."""
+        def make():
+            from PyQt6.QtGui import QRadialGradient
+            img = QImage(64, 64, QImage.Format.Format_ARGB32_Premultiplied); img.fill(Qt.GlobalColor.transparent)
+            p = QPainter(img); g = QRadialGradient(32, 32, 32)
+            g.setColorAt(0.0, QColor(255, 255, 255, 255)); g.setColorAt(0.35, QColor(255, 255, 255, 140)); g.setColorAt(1.0, QColor(255, 255, 255, 0))
+            p.setPen(Qt.PenStyle.NoPen); p.setBrush(g); p.drawEllipse(0, 0, 64, 64); p.end()
+            return img
+        return self._get(("glow",), make)
+
     def constellation(self, index: int) -> tuple[int, int, int]:
         from ..stories import CONSTELLATIONS
         _, _, stars, lines = CONSTELLATIONS[index]

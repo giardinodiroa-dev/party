@@ -174,3 +174,24 @@ def test_settings_panel_binds_to_window(tmp_path, monkeypatch):
     w._changed()
     data = json.loads((tmp_path / "state.json").read_text())
     assert data["bar_fill"] == 0.7 and data["aura_edges"] == 10 and data["ledaie_color"] == -2
+
+
+def test_stage_shows_one_thing_at_a_time():
+    from party.scenes import Stage
+    class Src:
+        def __init__(self, dur): self.dur, self.t0, self.on = dur, None, False
+        @property
+        def active(self): return self.on
+        def begin(self, t): self.t0, self.on = t, True
+        def frame(self, t):
+            if self.on and t - self.t0 >= self.dur: self.on = False
+    srcs = {k: Src(3.0) for k in ("phrase", "story", "scene", "ledaie", "constellation", "image")}
+    st = Stage(breath=2.0); seen = []
+    for i in range(1200):
+        t = i / 10
+        on = st.tick(t, {k: True for k in srcs}, srcs)
+        for s_ in srcs.values(): s_.frame(t)
+        seen.append(on)
+        assert sum(1 for s_ in srcs.values() if s_.active) <= 1
+    names = [x for x in seen if x]
+    assert len(set(names)) == 6 and any(x is None for x in seen[60:])

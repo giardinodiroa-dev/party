@@ -309,10 +309,18 @@ class Constellations:
         self.gap = 30.0
         self.next_at = 14.0
         self.current: tuple[int, float, float, float, float] | None = None   # index, t0, dur, x, y
+        self.auto = True
+
+    @property
+    def active(self) -> bool:
+        return self.current is not None
+
+    def begin(self, t: float) -> None:
+        self.next_at = t
 
     def frame(self, t: float) -> Sky | None:
         if self.current is None:
-            if t >= self.next_at:
+            if t >= self.next_at and (self.auto or self.next_at == t):
                 self.current = (self.rng.randrange(len(CONSTELLATIONS)), t, self.rng.uniform(14.0, 22.0),
                                 self.rng.uniform(0.25, 0.75), self.rng.uniform(0.25, 0.65))
             return None
@@ -349,10 +357,18 @@ class Stories:
         self.current: tuple[str, str, str, float, float, float] | None = None   # kind, caption, path, t0, dur, lane
         self.played = 0
         self.hidden: set[str] = set()         # actors he hid in the gallery
+        self.auto = True                      # False: the stage calls begin(); never self-starts
+
+    @property
+    def active(self) -> bool:
+        return self.current is not None
+
+    def begin(self, t: float) -> None:
+        self.next_at = t
 
     def frame(self, t: float) -> Shot | None:
         if self.current is None:
-            if t >= self.next_at:
+            if t >= self.next_at and (self.auto or self.next_at == t):
                 pool = [st for st in STORIES if st[0] not in self.hidden] or STORIES
                 kind, caption = self.rng.choice(pool)
                 holy = [st for st in pool if st[0] in HOLY]
