@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import QDialog, QListWidget, QListWidgetItem, QVBoxLayout, 
 from .. import theme
 from ..analysis import Levels
 from ..audio import AudioTap, default_monitor, list_sources
+from .aura import AuraParams, AuraWindow
 from .visuals import MODES, Scene
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -109,6 +110,8 @@ class MainWindow(QWidget):
         self.hotreload_on = True
         self.source: str | None = None
         self.fullscreen_wanted = False
+        self.aura: AuraWindow | None = None
+        self.aura_wanted = False
 
         self.scene = Scene()
         self.levels = Levels()
@@ -142,6 +145,7 @@ class MainWindow(QWidget):
         self.sensitivity = min(SENS_MAX, max(SENS_MIN, float(state.get("sensitivity", 1.0))))
         self.hotreload_on = bool(state.get("hotreload", True))
         self.fullscreen_wanted = bool(state.get("fullscreen", False))
+        self.aura_wanted = bool(state.get("aura", False))
         wanted = state.get("source")
         names = [n for n, _ in list_sources()]
         self.source = wanted if wanted in names else None      # None = AUTO: follow default output
@@ -155,6 +159,22 @@ class MainWindow(QWidget):
         self.frame.start()
         self.idle.start()
         self.follow.start()
+        if self.aura_wanted:
+            QTimer.singleShot(300, self.toggle_aura)
+
+    def aura_params(self) -> AuraParams:
+        lv = self.levels
+        return AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity)
+
+    def toggle_aura(self) -> None:
+        """AURA: every line, border and glyph on the whole screen glows on the beat."""
+        if self.aura is not None and self.aura.isVisible():
+            self.aura.stop()
+        else:
+            if self.aura is None:
+                self.aura = AuraWindow(self.aura_params)
+            self.aura.start()
+        self._changed()
 
     def _follow_default(self) -> None:
         """AUTO: when he switches output devices, the tap moves with the default sink."""
@@ -166,6 +186,7 @@ class MainWindow(QWidget):
     def state(self) -> dict:
         return {"mode": self.mode, "sensitivity": round(self.sensitivity, 3),
                 "source": self.source, "fullscreen": self.isFullScreen(),
+                "aura": bool(self.aura is not None and self.aura.isVisible()),
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
 
@@ -181,6 +202,8 @@ class MainWindow(QWidget):
     def closeEvent(self, e) -> None:  # noqa: N802
         self.frame.stop()
         self.save()
+        if self.aura is not None:
+            self.aura.stop()
         self.tap.stop()
         super().closeEvent(e)
 
@@ -228,6 +251,8 @@ class MainWindow(QWidget):
             self.set_mode(action[5:])
         elif action == "fullscreen":
             self.toggle_fullscreen()
+        elif action == "aura":
+            self.toggle_aura()
         elif action == "source":
             self.pick_source()
         elif action == "hotreload":
@@ -304,6 +329,8 @@ class MainWindow(QWidget):
             parts.append(f"{int(round(self.levels.bpm))} BPM")
         if self.paused:
             parts.append("PAUSED")
+        if self.aura is not None and self.aura.isVisible():
+            parts.append(self.aura.error or f"AURA {self.aura.fps}fps {self.aura.frame_ms:.1f}ms")
         return " · ".join(parts), theme.GOOD if self.tap.alive and not self.paused else theme.WARN
 
     def _paint_bar(self, p: QPainter, rect: QRectF) -> None:
@@ -312,13 +339,14 @@ class MainWindow(QWidget):
         p.fillRect(bar, theme.alpha(theme.VOID, 0.9))
         p.fillRect(QRectF(bar.left(), bar.top(), bar.width(), 1), QColor(theme.HAIRLINE))
         chips = [("mode:PULSE", "pulse", "1"), ("mode:BARS", "bars", "2"), ("mode:ORBS", "orbs", "3"),
-                 ("fullscreen", "full", "F"), ("source", "source", "S"),
+                 ("aura", "aura", "4"), ("fullscreen", "full", "F"), ("source", "source", "S"),
                  ("pause", "play" if self.paused else "pause", "SPC"),
                  ("hotreload", "reload", "R")]
         x = bar.left() + 16
         for action, glyph, key in chips:
             live = ((action.startswith("mode:") and action[5:] == self.mode)
                     or (action == "hotreload" and self.hotreload_on)
+                    or (action == "aura" and self.aura is not None and self.aura.isVisible())
                     or (action == "pause" and self.paused))
             box = QRectF(x, bar.top() + 8, 40, 40)
             if live:
@@ -364,6 +392,11 @@ class MainWindow(QWidget):
         elif kind == "orbs":
             for dx, dy, rr in ((-0.5, 0.3, 0.3), (0.45, -0.4, 0.42), (0.35, 0.5, 0.22)):
                 p.drawEllipse(QPointF(c.x() + dx * r, c.y() + dy * r), rr * r, rr * r)
+        elif kind == "aura":
+            p.drawRect(QRectF(c.x() - r * 0.55, c.y() - r * 0.4, r * 1.1, r * 0.8))
+            pen.setColor(theme.alpha(color, 0.45))
+            p.setPen(pen)
+            p.drawRoundedRect(QRectF(c.x() - r, c.y() - r * 0.85, r * 2, r * 1.7), 4, 4)
         elif kind == "full":
             for sx in (-1, 1):
                 for sy in (-1, 1):
@@ -473,6 +506,8 @@ class MainWindow(QWidget):
             self.toggle_pause()
         elif k in (Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3):
             self.set_mode(MODES[k - Qt.Key.Key_1])
+        elif k == Qt.Key.Key_4:
+            self.toggle_aura()
         elif k == Qt.Key.Key_M:
             self.next_mode()
         elif k == Qt.Key.Key_S:

@@ -79,3 +79,9 @@ def test_analyzer_returns_levels_in_range():
         assert 0.0 <= v <= 1.0
     assert lv.spectrum.shape == (32,)
     assert lv.bass > lv.mid
+
+
+def test_aura_intensity_is_bounded():
+    from party.ui.aura import AuraParams
+    assert AuraParams(loud=0, bass=0, flash=0, sensitivity=0.3).intensity() > 0.0
+    assert AuraParams(loud=1, bass=1, flash=1, sensitivity=3.0).intensity() <= 1.6
