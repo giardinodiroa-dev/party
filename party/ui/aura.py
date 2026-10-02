@@ -552,9 +552,10 @@ class AuraWindow(QOpenGLWindow):
                 hx, hw_, hh_ = self.textures.handscript(show.word, 96 if show.kind == "symbol" else 64)
                 sw, sh = hw_ * show.scale / W, hh_ * show.scale / H
                 out.append((hx, show.x - sw / 2, show.y - sh / 2, sw, sh, show.alpha, led_tint))
-                if show.kind == "word":
-                    lt, lw, lh = self.textures.text(f"{show.word}  ·  {show.meaning}", 22, led_font)
-                    out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * 0.8, led_tint))
+                # the Latin spelling always rides under the runes, so a word can always be checked against the dictionary
+                line = f"{show.word}  ·  {show.meaning}" if show.kind == "word" else show.word
+                lt, lw, lh = self.textures.text(line, 22 if show.kind == "word" else 18, led_font)
+                out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * (0.8 if show.kind == "word" else 0.55), led_tint))
         if self.flags["stories"]:
             sources = self.flags["sources"]
             self.stories.hidden = {k for k, v in sources.items() if v == "hidden"}
