@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Party: a ring of coloured lights around a spectrum, on voidblack -->
+  <rect x="8" y="8" width="240" height="240" rx="40" fill="#07070a" stroke="#1b1b24" stroke-width="3"/>
+  <circle cx="128" cy="128" r="92" fill="none" stroke="#2a2833" stroke-width="2"/>
+  <g>
+    <circle cx="128" cy="36"  r="11" fill="#5ee3b0"/>
+    <circle cx="193" cy="63"  r="11" fill="#5eb8ff"/>
+    <circle cx="220" cy="128" r="11" fill="#c58eff"/>
+    <circle cx="193" cy="193" r="11" fill="#ff7eb6"/>
+    <circle cx="128" cy="220" r="11" fill="#ffb45e"/>
+    <circle cx="63"  cy="193" r="11" fill="#e8e36a"/>
+    <circle cx="36"  cy="128" r="11" fill="#5ee3e3"/>
+    <circle cx="63"  cy="63"  r="11" fill="#ff8a5e"/>
+  </g>
+  <g fill="#efe8da">
+    <rect x="80"  y="134" width="14" height="40" rx="4"/>
+    <rect x="102" y="104" width="14" height="70" rx="4"/>
+    <rect x="124" y="78"  width="14" height="96" rx="4"/>
+    <rect x="146" y="116" width="14" height="58" rx="4"/>
+    <rect x="168" y="140" width="14" height="34" rx="4"/>
+  </g>
+</svg>
