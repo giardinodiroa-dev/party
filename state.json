@@ -1,1 +1,15 @@
-{"mode": "PULSE", "sensitivity": 1.0, "source": null, "fullscreen": false, "hotreload": true, "aura": false, "aura_width": 2.0, "aura_bold": false, "aura_astral": true}
+{
+  "mode": "BARS",
+  "sensitivity": 1.0,
+  "source": null,
+  "fullscreen": false,
+  "aura": true,
+  "aura_width": 0.69,
+  "aura_bold": true,
+  "aura_astral": true,
+  "aura_color": 0,
+  "aura_border": 0,
+  "aura_ghost": true,
+  "hotreload": true,
+  "geometry": "01d9d0cb00030000000000cb000000680000048a00000297000000cb000000680000048a0000029700000000000000000556000000cb000000680000048a00000297"
+}

@@ -20,3 +20,10 @@ things unreadable… not make things bolder unless I want to… add some sfx to 
 lights and astral elements, mother pearl type colors… not just one color but varied gradients…
 trippy in a holy way". Built: width slider/keys, ring glow off the strokes, bold toggle (off),
 pearl palette over a drifting hue field, stars/nebula/beat orbs dimmed over content.
+
+His words (2026-10-02, fourth ask): "1. different color modes mother pearl is one 2. the previous
+one with all one color switching 3. patterns many options… fix the lights they are chopped by
+borders… make it seem like we are seeing a ghost party or nebulas in the background… an option
+to restyle the border of the text… choose the borders or types of borders".
+Built: 7 colour modes (C / picker), 6 border styles (T / picker), 3x3 cell lookup for stars and
+orbs (no clipping), fbm nebula + ghost dancers (G), all persisted.

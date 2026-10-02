@@ -62,44 +62,94 @@ COMPOSE = """#version 330 core
 in vec2 uv; out vec4 frag;
 uniform sampler2D edges; uniform sampler2D halo;
 uniform float time; uniform float hue; uniform float loud; uniform float bass; uniform float flash;
-uniform float coreAmt; uniform float haloAmt; uniform float astralAmt; uniform vec2 res;
+uniform float coreAmt; uniform float haloAmt; uniform float astralAmt; uniform float ghostAmt;
+uniform int colorMode; uniform int border; uniform vec2 res;
 float hash21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float vnoise(vec2 p){
   vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   float a = hash21(i), b = hash21(i + vec2(1, 0)), c = hash21(i + vec2(0, 1)), d = hash21(i + vec2(1, 1));
   return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
+float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * vnoise(p); p = p * 2.03 + 11.7; a *= 0.5; } return v; }
+vec3 hsv2rgb(vec3 c){ vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
 // mother-of-pearl: a pastel cosine palette pulled toward white
 vec3 pearl(float t){ vec3 c = 0.72 + 0.28 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67))); return mix(c, vec3(1.0), 0.22); }
+// the colour worlds — t: a 0..1 field over the screen, k: local strength 0..1
+vec3 palette(int mode, float t, float k){
+  if (mode == 1) return hsv2rgb(vec3(hue / 360.0, 0.85, 1.0));                                   // MONO
+  if (mode == 2) return hsv2rgb(vec3(fract(t * 1.5), 0.9, 1.0));                                 // RAINBOW
+  if (mode == 3) return mix(vec3(0.9, 0.15, 0.0), vec3(1.0, 0.95, 0.6), k) * (0.6 + 0.4 * k);    // FIRE
+  if (mode == 4) return mix(vec3(0.2, 0.5, 1.0), vec3(0.85, 1.0, 1.0), k);                       // ICE
+  if (mode == 5) return mix(vec3(1.0, 0.72, 0.25), vec3(1.0, 0.98, 0.85), k);                    // HOLY
+  if (mode == 6) { float b = 0.5 + 0.5 * sin(t * 12.0 + time * 0.5); return mix(vec3(0.2, 1.0, 0.5), vec3(0.6, 0.3, 1.0), b); } // AURORA
+  return pearl(t);                                                                               // PEARL
+}
+// the border styles — h: blurred edge map (a soft distance to the nearest stroke), hs: the same, offset
+float ring(int style, float h, float hs, vec2 px){
+  if (style == 1) return pow(h, 0.5) * 0.5 + smoothstep(0.12, 0.35, h) * 0.9;                             // NEON
+  if (style == 2) return smoothstep(0.05, 0.09, h) * (1.0 - smoothstep(0.10, 0.15, h)) * 1.6 + smoothstep(0.28, 0.45, h); // DOUBLE
+  if (style == 3) return smoothstep(0.08, 0.11, h) * (1.0 - smoothstep(0.12, 0.17, h)) * 1.8;            // OUTLINE
+  if (style == 4) return h * (0.5 + step(0.45, vnoise(px * 0.12 + vec2(time * 7.0, -time * 5.0))));       // ELECTRIC
+  if (style == 5) return hs;                                                                              // SHADOW
+  return h;                                                                                               // SOFT
+}
 void main(){
   float e = texture(edges, uv).r;
   float h = texture(halo, uv).r;
+  float hs = texture(halo, uv - vec2(5.0, -5.0) / res).r;
   vec2 px = uv * res;
-  // the colour field: hue drifts across the screen and through time — never one colour
   float t = hue / 360.0 + 0.12 * sin(uv.x * 4.1 + time * 0.21) + 0.12 * sin(uv.y * 3.3 - time * 0.17)
           + 0.10 * (vnoise(uv * 3.0 + time * 0.05) - 0.5);
-  vec3 ringC = pearl(t);
-  vec3 coreC = mix(pearl(t + 0.08), vec3(1.0), 0.6);
-  float ringA = h * (1.0 - e) * haloAmt;        // beside the strokes, never on them
-  float coreA = e * coreAmt;                     // only when he wants bold
-  // astral: twinkling stars, a slow nebula, orbs born on the beat — dimmed over content
+  float k = clamp(h * 3.0, 0.0, 1.0);
+  vec3 ringC = palette(colorMode, t, k);
+  vec3 coreC = mix(palette(colorMode, t + 0.08, 1.0), vec3(1.0), 0.6);
+  float ringA = ring(border, h, hs, px) * (1.0 - e) * haloAmt;   // beside the strokes, never on them
+  float coreA = e * coreAmt;                                       // only when he wants bold
   float content = smoothstep(0.02, 0.25, h);
-  vec2 cell = floor(px / 28.0);
-  vec2 cp = (cell + vec2(hash21(cell), hash21(cell + 7.0))) * 28.0;
-  float tw = pow(0.5 + 0.5 * sin(time * (1.0 + hash21(cell + 3.0) * 2.0) + hash21(cell) * 6.28), 6.0);
-  float star = smoothstep(2.2, 0.0, length(px - cp)) * tw * (0.35 + 0.65 * flash) * step(0.55, hash21(cell + 11.0));
-  float neb = vnoise(uv * 2.2 + vec2(time * 0.03, -time * 0.02)) * vnoise(uv * 5.0 - time * 0.04);
-  neb = smoothstep(0.25, 0.75, neb) * (0.05 + 0.10 * loud);
-  vec2 oc = floor(px / 180.0);
-  vec2 op = (oc + vec2(hash21(oc + 5.0), hash21(oc + 9.0))) * 180.0
-          + vec2(sin(time * 0.3 + hash21(oc) * 6.0), cos(time * 0.27 + hash21(oc + 1.0) * 6.0)) * 22.0;
-  float orad = 14.0 + 40.0 * hash21(oc + 2.0) * (0.5 + bass);
-  float orb = smoothstep(orad, orad * 0.2, length(px - op)) * flash * 0.35 * step(0.5, hash21(oc + 13.0));
-  float astral = (star * 0.9 + neb + orb) * astralAmt * (1.0 - content * 0.85);
-  vec3 astralC = pearl(t + 0.3 + 0.2 * hash21(cell));
-  float total = coreA + ringA + astral;
+  // stars: look at the 3x3 neighbouring cells so no star is cut at a cell edge
+  float star = 0.0; vec2 cell = floor(px / 28.0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 c = cell + vec2(i, j);
+    if (hash21(c + 11.0) < 0.55) continue;
+    vec2 cp = (c + vec2(hash21(c), hash21(c + 7.0))) * 28.0;
+    float tw = pow(0.5 + 0.5 * sin(time * (1.0 + hash21(c + 3.0) * 2.0) + hash21(c) * 6.28), 6.0);
+    star += smoothstep(2.2, 0.0, length(px - cp)) * tw;
+  }
+  star *= 0.35 + 0.65 * flash;
+  // orbs born on the beat: same 3x3 search, so they drift across cell borders whole
+  float orb = 0.0; vec2 oc = floor(px / 180.0);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 c = oc + vec2(i, j);
+    if (hash21(c + 13.0) < 0.5) continue;
+    vec2 op = (c + vec2(hash21(c + 5.0), hash21(c + 9.0))) * 180.0
+            + vec2(sin(time * 0.3 + hash21(c) * 6.0), cos(time * 0.27 + hash21(c + 1.0) * 6.0)) * 40.0;
+    float orad = 14.0 + 40.0 * hash21(c + 2.0) * (0.5 + bass);
+    orb += smoothstep(orad, orad * 0.2, length(px - op));
+  }
+  orb *= flash * 0.35;
+  // the background: a domain-warped nebula and a ghost party, where there is no content
+  vec2 q = vec2(fbm(uv * 2.0 + time * 0.02), fbm(uv * 2.0 - time * 0.015));
+  float n = fbm(uv * 3.0 + q * 1.5 + time * 0.01);
+  float neb = smoothstep(0.35, 0.8, n) * (0.10 + 0.14 * loud) * ghostAmt;
+  float ghost = 0.0;
+  for (int i = 0; i < 6; i++) {
+    float fi = float(i); float ph = hash21(vec2(fi, 3.0)) * 6.28;
+    vec2 c = vec2(0.08 + 0.84 * fract(hash21(vec2(fi, 1.0)) + time * 0.012 * (0.5 + hash21(vec2(fi, 2.0)))),
+                  0.58 + 0.10 * sin(time * 0.7 + ph));
+    c.x += 0.015 * sin(time * 2.0 * (1.0 + bass) + ph);                       // sway on the beat
+    vec2 d = (uv - c) * vec2(res.x / res.y, 1.0);
+    float body = exp(-dot(d * vec2(9.0, 4.0), d * vec2(9.0, 4.0)));
+    vec2 dh = d - vec2(0.0, -0.17);
+    float head = exp(-dot(dh * 14.0, dh * 14.0));
+    ghost += (body * 0.8 + head) * (0.6 + 0.4 * sin(time * 1.3 + ph));
+  }
+  ghost *= ghostAmt * (0.05 + 0.08 * loud + 0.10 * flash);
+  float sky = (star * 0.9 + orb) * astralAmt + neb + ghost;
+  sky *= 1.0 - content * 0.85;
+  vec3 skyC = palette(colorMode, t + 0.3 + 0.25 * n, n);
+  float total = coreA + ringA + sky;
   float a = clamp(total, 0.0, 0.9);
-  vec3 rgb = (coreC * coreA + ringC * ringA + astralC * astral) / max(total, 1e-4);
+  vec3 rgb = (coreC * coreA + ringC * ringA + skyC * sky) / max(total, 1e-4);
   frag = vec4(rgb * a, a);                       // premultiplied, as X ARGB visuals expect
 }
 """
@@ -107,6 +157,10 @@ BLIT = """#version 330 core
 in vec2 uv; out vec4 frag; uniform sampler2D src;
 void main(){ frag = texture(src, vec2(uv.x, 1.0 - uv.y)); }
 """
+
+
+COLOR_MODES = ["PEARL", "MONO", "RAINBOW", "FIRE", "ICE", "HOLY", "AURORA"]
+BORDER_STYLES = ["SOFT", "NEON", "DOUBLE", "OUTLINE", "ELECTRIC", "SHADOW"]
 
 
 @dataclass
@@ -120,6 +174,9 @@ class AuraParams:
     bold: bool = False        # paint the stroke pixels themselves (makes things bolder)
     astral: bool = True
     time: float = 0.0
+    color_mode: int = 0       # index into COLOR_MODES
+    border: int = 0           # index into BORDER_STYLES
+    ghost: bool = True        # nebula + ghost party in the background
 
     def intensity(self) -> float:
         base = 0.12 + 0.5 * self.loud + 0.7 * self.flash
@@ -226,7 +283,9 @@ class AuraPipeline:
                    {"edges": 0, "halo": 1, "time": float(params.time), "hue": float(params.hue),
                     "loud": float(params.loud), "bass": float(params.bass), "flash": float(params.flash),
                     "coreAmt": amt * 0.8 if params.bold else 0.0, "haloAmt": amt * 2.6,
-                    "astralAmt": 1.0 if params.astral else 0.0, "res": (float(W), float(H))})
+                    "astralAmt": 1.0 if params.astral else 0.0, "ghostAmt": 1.0 if params.ghost else 0.0,
+                    "colorMode": int(params.color_mode), "border": int(params.border),
+                    "res": (float(W), float(H))})
         glow = self.glow_fbo[self.cur].texture()
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, target_fbo)
         gl.glClearColor(0, 0, 0, 0)

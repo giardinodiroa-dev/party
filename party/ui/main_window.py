@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QDialog, QListWidget, QListWidgetItem, QVBoxLayout, 
 from .. import theme
 from ..analysis import Levels
 from ..audio import AudioTap, default_monitor, list_sources
-from .aura import AuraParams, AuraWindow
+from .aura import BORDER_STYLES, COLOR_MODES, AuraParams, AuraWindow
 from .visuals import MODES, Scene
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,7 +46,7 @@ def fit_text(p: QPainter, rect: QRectF, text: str, size: float, color: str,
     p.drawText(rect, int(align), text)
 
 
-class SourceMenu(QDialog):
+class TinyMenu(QDialog):
     """Tiny scrollable hotkey menu (house law 2): rows stamped [1]..[9], Esc closes."""
 
     def __init__(self, parent: QWidget, sources: list[tuple[str, str]], current: str | None):
@@ -115,6 +115,9 @@ class MainWindow(QWidget):
         self.aura_width = 2.0
         self.aura_bold = False
         self.aura_astral = True
+        self.aura_color = 0
+        self.aura_border = 0
+        self.aura_ghost = True
         self._t0 = time.monotonic()
         self._drag_width = False
         self._width_rect = QRectF()
@@ -155,6 +158,9 @@ class MainWindow(QWidget):
         self.aura_width = min(6.0, max(0.5, float(state.get("aura_width", 2.0))))
         self.aura_bold = bool(state.get("aura_bold", False))
         self.aura_astral = bool(state.get("aura_astral", True))
+        self.aura_color = int(state.get("aura_color", 0)) % len(COLOR_MODES)
+        self.aura_border = int(state.get("aura_border", 0)) % len(BORDER_STYLES)
+        self.aura_ghost = bool(state.get("aura_ghost", True))
         wanted = state.get("source")
         names = [n for n, _ in list_sources()]
         self.source = wanted if wanted in names else None      # None = AUTO: follow default output
@@ -174,7 +180,29 @@ class MainWindow(QWidget):
     def aura_params(self) -> AuraParams:
         lv = self.levels
         return AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity,
-                          self.aura_width, self.aura_bold, self.aura_astral, time.monotonic() - self._t0)
+                          self.aura_width, self.aura_bold, self.aura_astral, time.monotonic() - self._t0,
+                          self.aura_color, self.aura_border, self.aura_ghost)
+
+    def _pick_from(self, names: list[str], current: int, title: str) -> int | None:
+        items = [(str(i), f"{title} · {n}") for i, n in enumerate(names)]
+        menu = TinyMenu(self, items, str(current))
+        anchor = self._bar_rect.topLeft() if self._bar_rect.isValid() else QPointF(20, 20)
+        menu.move(self.mapToGlobal(QPointF(anchor.x() + 16, anchor.y() - menu.sizeHint().height() - 8).toPoint()))
+        menu.exec()
+        self._show_chrome()
+        return int(menu.choice) if menu.choice is not None else None
+
+    def pick_color(self) -> None:
+        c = self._pick_from(COLOR_MODES, self.aura_color, "COLOUR")
+        if c is not None:
+            self.aura_color = c
+            self._changed()
+
+    def pick_border(self) -> None:
+        b = self._pick_from(BORDER_STYLES, self.aura_border, "BORDER")
+        if b is not None:
+            self.aura_border = b
+            self._changed()
 
     def nudge_width(self, d: float) -> None:
         self.aura_width = min(6.0, max(0.5, self.aura_width + d))
@@ -202,7 +230,8 @@ class MainWindow(QWidget):
                 "source": self.source, "fullscreen": self.isFullScreen(),
                 "aura": bool(self.aura is not None and self.aura.isVisible()),
                 "aura_width": round(self.aura_width, 2), "aura_bold": self.aura_bold,
-                "aura_astral": self.aura_astral,
+                "aura_astral": self.aura_astral, "aura_color": self.aura_color,
+                "aura_border": self.aura_border, "aura_ghost": self.aura_ghost,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
 
@@ -251,7 +280,7 @@ class MainWindow(QWidget):
 
     def pick_source(self) -> None:
         sources = [("", "AUTO · follow the default output")] + list_sources()
-        menu = SourceMenu(self, sources, self.source or "")
+        menu = TinyMenu(self, sources, self.source or "")
         anchor = self._bar_rect.topLeft() if self._bar_rect.isValid() else QPointF(20, 20)
         pos = self.mapToGlobal(QPointF(anchor.x() + 16, anchor.y() - menu.sizeHint().height() - 8).toPoint())
         menu.move(pos)
@@ -275,6 +304,13 @@ class MainWindow(QWidget):
         elif action == "astral":
             self.aura_astral = not self.aura_astral
             self._changed()
+        elif action == "ghost":
+            self.aura_ghost = not self.aura_ghost
+            self._changed()
+        elif action == "color":
+            self.pick_color()
+        elif action == "border":
+            self.pick_border()
         elif action == "source":
             self.pick_source()
         elif action == "hotreload":
@@ -352,7 +388,8 @@ class MainWindow(QWidget):
         if self.paused:
             parts.append("PAUSED")
         if self.aura is not None and self.aura.isVisible():
-            parts.append(self.aura.error or f"AURA {self.aura.fps}fps {self.aura.frame_ms:.1f}ms")
+            parts.append(self.aura.error or f"AURA {COLOR_MODES[self.aura_color]} {BORDER_STYLES[self.aura_border]} "
+                                            f"{self.aura.fps}fps {self.aura.frame_ms:.1f}ms")
         return " · ".join(parts), theme.GOOD if self.tap.alive and not self.paused else theme.WARN
 
     def _paint_bar(self, p: QPainter, rect: QRectF) -> None:
@@ -361,7 +398,8 @@ class MainWindow(QWidget):
         p.fillRect(bar, theme.alpha(theme.VOID, 0.9))
         p.fillRect(QRectF(bar.left(), bar.top(), bar.width(), 1), QColor(theme.HAIRLINE))
         chips = [("mode:PULSE", "pulse", "1"), ("mode:BARS", "bars", "2"), ("mode:ORBS", "orbs", "3"),
-                 ("aura", "aura", "4"), ("bold", "bold", "B"), ("astral", "astral", "A"),
+                 ("aura", "aura", "4"), ("color", "color", "C"), ("border", "border", "T"),
+                 ("ghost", "ghost", "G"), ("bold", "bold", "B"), ("astral", "astral", "A"),
                  ("fullscreen", "full", "F"), ("source", "source", "S"),
                  ("pause", "play" if self.paused else "pause", "SPC"),
                  ("hotreload", "reload", "R")]
@@ -372,6 +410,7 @@ class MainWindow(QWidget):
                     or (action == "aura" and self.aura is not None and self.aura.isVisible())
                     or (action == "bold" and self.aura_bold)
                     or (action == "astral" and self.aura_astral)
+                    or (action == "ghost" and self.aura_ghost)
                     or (action == "pause" and self.paused))
             box = QRectF(x, bar.top() + 8, 40, 40)
             if live:
@@ -429,6 +468,26 @@ class MainWindow(QWidget):
             pen.setColor(theme.alpha(color, 0.45))
             p.setPen(pen)
             p.drawRoundedRect(QRectF(c.x() - r, c.y() - r * 0.85, r * 2, r * 1.7), 4, 4)
+        elif kind == "color":
+            for i, ang in enumerate((90, 210, 330)):
+                a = math.radians(ang)
+                p.setBrush(QColor(theme.ACCENTS[i * 2]))
+                p.setPen(Qt.PenStyle.NoPen)
+                p.drawEllipse(QPointF(c.x() + math.cos(a) * r * 0.42, c.y() - math.sin(a) * r * 0.42), r * 0.42, r * 0.42)
+        elif kind == "border":
+            p.drawRect(QRectF(c.x() - r * 0.45, c.y() - r * 0.3, r * 0.9, r * 0.6))
+            pen.setStyle(Qt.PenStyle.DotLine)
+            p.setPen(pen)
+            p.drawRect(QRectF(c.x() - r, c.y() - r * 0.8, r * 2, r * 1.6))
+        elif kind == "ghost":
+            path = QPainterPath(QPointF(c.x() - r * 0.6, c.y() + r))
+            path.lineTo(QPointF(c.x() - r * 0.6, c.y() - r * 0.3))
+            path.arcTo(QRectF(c.x() - r * 0.6, c.y() - r, r * 1.2, r * 1.2), 180, -180)
+            path.lineTo(QPointF(c.x() + r * 0.6, c.y() + r))
+            for k_ in range(3):
+                path.lineTo(QPointF(c.x() + r * 0.6 - r * 0.4 * (k_ + 0.5), c.y() + r * 0.6))
+                path.lineTo(QPointF(c.x() + r * 0.6 - r * 0.4 * (k_ + 1.0), c.y() + r))
+            p.drawPath(path)
         elif kind == "bold":
             pen.setWidthF(3.6)
             p.setPen(pen)
@@ -567,6 +626,14 @@ class MainWindow(QWidget):
             self._act("bold")
         elif k == Qt.Key.Key_A:
             self._act("astral")
+        elif k == Qt.Key.Key_C:
+            self.aura_color = (self.aura_color + 1) % len(COLOR_MODES)
+            self._changed()
+        elif k == Qt.Key.Key_T:
+            self.aura_border = (self.aura_border + 1) % len(BORDER_STYLES)
+            self._changed()
+        elif k == Qt.Key.Key_G:
+            self._act("ghost")
         elif k == Qt.Key.Key_BracketLeft:
             self.nudge_width(-0.25)
         elif k == Qt.Key.Key_BracketRight:
