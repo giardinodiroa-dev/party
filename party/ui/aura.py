@@ -74,9 +74,11 @@ in vec2 uv; out vec4 frag;
 uniform sampler2D screen; uniform sampler2D prevGlow; uniform sampler2D prevClean;
 void main(){
   vec4 c = texture(screen, uv); vec4 g = texture(prevGlow, uv);
-  if (g.a > 0.9) { frag = vec4(texture(prevClean, uv).rgb, 1.0); return; }   // only what we drew SOLID (lens, a body at 0.985): keep what we last saw beneath
-  float a = min(g.a, 0.95);
-  frag = vec4(clamp((c.rgb - g.rgb) / (1.0 - a), 0.0, 1.0), 1.0);
+  // un-blend what we drew; the near-solid range (a body fading 0.6..0.9) cross-fades to what we last saw
+  // beneath, so the divisor never drops below 0.4 (max x2.5) and fades never amplify into inverted colours
+  float a = min(g.a, 0.6);
+  vec3 under = clamp((c.rgb - g.rgb) / (1.0 - a), 0.0, 1.0);
+  frag = vec4(mix(under, texture(prevClean, uv).rgb, smoothstep(0.6, 0.9, g.a)), 1.0);
 }
 """
 EDGES = """#version 330 core
