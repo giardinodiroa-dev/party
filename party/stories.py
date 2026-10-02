@@ -225,9 +225,10 @@ class Shot:
 
 
 class Stories:
-    def __init__(self, every: tuple[float, float] = (25.0, 70.0), seed: int | None = None) -> None:
+    def __init__(self, every: tuple[float, float] = (14.0, 26.0), seed: int | None = None) -> None:
         self.rng = random.Random(seed)
         self.every = every
+        self.gap = 20.0                     # his setting: seconds between stories (±30%)
         self.next_at = 6.0
         self.current: tuple[str, str, str, float, float, float] | None = None   # kind, caption, path, t0, dur, lane
         self.played = 0
@@ -244,7 +245,7 @@ class Stories:
         u = (t - t0) / dur
         if u >= 1.0:
             self.current = None
-            self.next_at = t + self.rng.uniform(*self.every)
+            self.next_at = t + self.rng.uniform(self.gap * 0.7, self.gap * 1.3)
             return None
         return self._shot(kind, caption, path, u, lane, t)
 

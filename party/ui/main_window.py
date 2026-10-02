@@ -18,7 +18,8 @@ from PyQt6.QtWidgets import QDialog, QLabel, QLineEdit, QListWidget, QListWidget
 from .. import theme
 from ..analysis import Levels
 from ..audio import AudioTap, default_monitor, list_sources
-from .aura import BORDER_STYLES, COLOR_MODES, WAVE_STYLES, AuraParams, AuraWindow
+from .aura import (BORDER_STYLES, COLOR_MODES, EDGE_PRESETS, PHRASE_ANIMS, PHRASE_FONT_NAMES, WAVE_STYLES,
+                   AuraParams, AuraWindow)
 from .visuals import MODES, Scene
 
 import os
@@ -28,7 +29,7 @@ STATE = Path(os.environ.get("PARTY_STATE") or ROOT / "state.json")
 PROFILES = ROOT / "profiles"
 PROFILE_KEYS = ("mode", "sensitivity", "hotreload", "aura", "aura_width", "aura_bold", "aura_astral",
                 "aura_color", "aura_border", "aura_ghost", "aura_waves", "aura_shape", "aura_bright",
-                "aura_lens", "aura_brainwash", "aura_stories")
+                "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "story_gap", "phrase_gap", "phrase_font", "phrase_color", "phrase_size", "phrase_anim")
 TITLE_H = 30.0
 BAR_H = 56.0
 EDGE = 7
@@ -155,7 +156,15 @@ class MainWindow(QWidget):
         self.aura_color = 0
         self.aura_border = 0
         self.aura_ghost = True
-        self.aura_waves = 0
+        self.aura_waves = 1
+        self.aura_edges = 1
+        self.aura_barcolor = 2
+        self.story_gap = 20.0
+        self.phrase_gap = 5.0
+        self.phrase_font = "MONO"
+        self.phrase_color = 0
+        self.phrase_size = 1
+        self.phrase_anim = 0
         self.aura_lens = False
         self.aura_brainwash = True
         self.aura_stories = True
@@ -222,7 +231,17 @@ class MainWindow(QWidget):
         self.aura_color = int(state.get("aura_color", 0)) % len(COLOR_MODES)
         self.aura_border = int(state.get("aura_border", 0)) % len(BORDER_STYLES)
         self.aura_ghost = bool(state.get("aura_ghost", True))
-        self.aura_waves = int(state.get("aura_waves", 0)) % len(WAVE_STYLES)
+        self.aura_waves = int(state.get("aura_waves", 1)) % len(WAVE_STYLES)
+        if "aura_edges" not in state and self.aura_waves == 0:
+            self.aura_waves = 1                      # one-time: older saves said OFF; he wants the bars
+        self.aura_edges = int(state.get("aura_edges", 1)) & 15
+        self.aura_barcolor = max(-1, min(len(COLOR_MODES) - 1, int(state.get("aura_barcolor", 2))))
+        self.story_gap = min(300.0, max(3.0, float(state.get("story_gap", 20.0))))
+        self.phrase_gap = min(120.0, max(1.0, float(state.get("phrase_gap", 5.0))))
+        self.phrase_font = state.get("phrase_font") if state.get("phrase_font") in PHRASE_FONT_NAMES else "MONO"
+        self.phrase_color = int(state.get("phrase_color", 0)) % len(COLOR_MODES)
+        self.phrase_size = int(state.get("phrase_size", 1)) % 4
+        self.phrase_anim = int(state.get("phrase_anim", 0)) % len(PHRASE_ANIMS)
         self.aura_lens = bool(state.get("aura_lens", False))
         self.aura_brainwash = bool(state.get("aura_brainwash", True))
         self.aura_stories = bool(state.get("aura_stories", True))
@@ -240,18 +259,50 @@ class MainWindow(QWidget):
                        self.aura_color, self.aura_border, self.aura_ghost, self.aura_waves, self.aura_lens)
         p.wave_shape = self.aura_shape
         p.bright = self.aura_bright
+        p.edges = self.aura_edges
+        p.bar_color = self.aura_barcolor
         p.spectrum = lv.spectrum
         if self.aura is not None:
             self.aura.flags["stories"] = self.aura_stories
             self.aura.flags["brainwash"] = self.aura_brainwash
+            self.aura.flags["story_gap"] = self.story_gap
+            self.aura.flags["phrase_gap"] = self.phrase_gap
+            self.aura.flags["phrase_font"] = self.phrase_font
+            self.aura.flags["phrase_color"] = self.phrase_color
+            self.aura.flags["phrase_size"] = self.phrase_size
+            self.aura.flags["phrase_anim"] = self.phrase_anim
         return p
+
+    STORY_GAPS = [5.0, 10.0, 20.0, 40.0, 90.0]
+    PHRASE_GAPS = [2.0, 3.0, 5.0, 10.0, 20.0, 45.0]
+
+    def cycle_story_gap(self) -> None:
+        g = self.STORY_GAPS
+        self.story_gap = g[(g.index(self.story_gap) + 1) % len(g)] if self.story_gap in g else g[0]
+        self._changed()
+
+    def cycle_phrase_gap(self) -> None:
+        g = self.PHRASE_GAPS
+        self.phrase_gap = g[(g.index(self.phrase_gap) + 1) % len(g)] if self.phrase_gap in g else g[0]
+        self._changed()
 
     def pick_fx(self) -> None:
         items = [("brainwash", f"BRAINWASH · {'ON' if self.aura_brainwash else 'OFF'}"),
                  ("lens", f"BLACK HOLE CURSOR · {'ON' if self.aura_lens else 'OFF'}"),
                  ("stories", f"STORIES · {'ON' if self.aura_stories else 'OFF'}"),
                  ("shape", f"EDGE SHAPE · {'BARS' if self.aura_shape else 'WAVE'}")]
-        items += [(f"waves:{i}", f"EDGE WAVES · {n}" + (" ·· LIVE" if i == self.aura_waves else ""))
+        items += [(f"edge:{bit}", f"BARS ON {name} · {'ON' if self.aura_edges & bit else 'OFF'}")
+                  for bit, name in ((1, "BOTTOM"), (2, "TOP"), (4, "LEFT"), (8, "RIGHT"))]
+        items += [("edge:all", "BARS ON ALL EDGES")]
+        items += [("phrasefont", f"PHRASE FONT · {self.phrase_font}  (tap to cycle)"),
+                  ("phrasecolor", f"PHRASE COLOUR · {COLOR_MODES[self.phrase_color]}  (tap to cycle)"),
+                  ("phrasesize", f"PHRASE SIZE · {('S', 'M', 'L', 'XL')[self.phrase_size]}  (tap to cycle)"),
+                  ("phraseanim", f"PHRASE MOTION · {PHRASE_ANIMS[self.phrase_anim]}  (tap to cycle)")]
+        items += [("storygap", f"STORY EVERY · {self.story_gap:.0f}s  (tap to cycle)"),
+                  ("phrasegap", f"PHRASE EVERY · {self.phrase_gap:.0f}s  (tap to cycle)")]
+        items += [(f"barcolor:{i}", f"BAR COLOUR · {n}" + (" ·· LIVE" if i == self.aura_barcolor else ""))
+                  for i, n in [(-1, "STYLE")] + list(enumerate(COLOR_MODES))]
+        items += [(f"waves:{i}", f"BAR STYLE · {n}" + (" ·· LIVE" if i == self.aura_waves else ""))
                   for i, n in enumerate(WAVE_STYLES)]
         menu = TinyMenu(self, items, None)
         anchor = self._bar_rect.topLeft() if self._bar_rect.isValid() else QPointF(20, 20)
@@ -263,6 +314,24 @@ class MainWindow(QWidget):
             return
         if c.startswith("waves:"):
             self.aura_waves = int(c[6:])
+        elif c == "edge:all":
+            self.aura_edges = 15
+        elif c.startswith("barcolor:"):
+            self.aura_barcolor = int(c[9:])
+        elif c == "phrasefont":
+            self.phrase_font = PHRASE_FONT_NAMES[(PHRASE_FONT_NAMES.index(self.phrase_font) + 1) % len(PHRASE_FONT_NAMES)]
+        elif c == "phrasecolor":
+            self.phrase_color = (self.phrase_color + 1) % len(COLOR_MODES)
+        elif c == "phrasesize":
+            self.phrase_size = (self.phrase_size + 1) % 4
+        elif c == "phraseanim":
+            self.phrase_anim = (self.phrase_anim + 1) % len(PHRASE_ANIMS)
+        elif c == "storygap":
+            self.cycle_story_gap()
+        elif c == "phrasegap":
+            self.cycle_phrase_gap()
+        elif c.startswith("edge:"):
+            self.aura_edges ^= int(c[5:])
         else:
             self._act(c)
         self._changed()
@@ -319,6 +388,10 @@ class MainWindow(QWidget):
                 "aura_waves": self.aura_waves, "aura_lens": self.aura_lens,
                 "aura_brainwash": self.aura_brainwash, "aura_stories": self.aura_stories,
                 "aura_shape": self.aura_shape, "aura_bright": round(self.aura_bright, 3),
+                "aura_edges": self.aura_edges, "aura_barcolor": self.aura_barcolor,
+                "story_gap": self.story_gap, "phrase_gap": self.phrase_gap,
+                "phrase_font": self.phrase_font, "phrase_color": self.phrase_color,
+                "phrase_size": self.phrase_size, "phrase_anim": self.phrase_anim,
                 "profile": self.profile,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
@@ -555,6 +628,9 @@ class MainWindow(QWidget):
             parts.append("PAUSED")
         if self.aura is not None and self.aura.isVisible():
             fx = "".join(ch for ch, on in (("W", self.aura_brainwash), ("K", self.aura_lens), ("N", self.aura_stories)) if on)
+            edges = next((n for m_, n in EDGE_PRESETS if m_ == self.aura_edges), "".join(
+                ch for ch, bit in (("B", 1), ("T", 2), ("L", 4), ("R", 8)) if self.aura_edges & bit) or "NONE")
+            fx += f" {edges}"
             parts.append(self.aura.error or f"AURA {COLOR_MODES[self.aura_color]} {BORDER_STYLES[self.aura_border]} "
                                             f"{WAVE_STYLES[self.aura_waves]} {fx} {self.aura.fps}fps {self.aura.frame_ms:.1f}ms")
         return " · ".join(parts), theme.GOOD if self.tap.alive and not self.paused else theme.WARN
@@ -823,6 +899,9 @@ class MainWindow(QWidget):
             self._act("bold")
         elif k == Qt.Key.Key_A:
             self._act("astral")
+        elif k == Qt.Key.Key_C and e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self.aura_barcolor = self.aura_barcolor + 1 if self.aura_barcolor < len(COLOR_MODES) - 1 else -1
+            self._changed()
         elif k == Qt.Key.Key_C:
             self.aura_color = (self.aura_color + 1) % len(COLOR_MODES)
             self._changed()
@@ -833,16 +912,25 @@ class MainWindow(QWidget):
             self._act("ghost")
         elif k == Qt.Key.Key_X:
             self.pick_fx()
+        elif k == Qt.Key.Key_W and e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self.cycle_phrase_gap()
         elif k == Qt.Key.Key_W:
             self._act("brainwash")
         elif k == Qt.Key.Key_K:
             self._act("lens")
         elif k == Qt.Key.Key_V:
             self._act("waves")
+        elif k == Qt.Key.Key_N and e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self.cycle_story_gap()
         elif k == Qt.Key.Key_N:
             self._act("stories")
         elif k == Qt.Key.Key_H:
             self._act("shape")
+        elif k == Qt.Key.Key_E:
+            masks = [m_ for m_, _ in EDGE_PRESETS]
+            i = masks.index(self.aura_edges) if self.aura_edges in masks else -1
+            self.aura_edges = masks[(i + 1) % len(masks)]
+            self._changed()
         elif k == Qt.Key.Key_P and e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
             self.prompt_save_profile()
         elif k == Qt.Key.Key_P:

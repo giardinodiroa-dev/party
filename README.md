@@ -5,7 +5,7 @@ Lights that move with whatever the laptop is playing. Run: `party` (or `lights`)
 It taps the PipeWire monitor of the default output (read-only; nothing is rerouted or
 recorded) and paints at 60 fps.
 
-Keys: `1` `2` `3` modes · `4` AURA (every line, border and glyph on the whole screen glows on the beat; click-through, apps untouched) · `B` bold (paint the strokes too; off by default so nothing gets heavier) · `A` astral sfx on/off · `G` ghost party + nebula background on/off · `C` cycle colour mode (chip opens the picker: PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA) · `T` cycle border style (picker: SOFT, NEON, DOUBLE, OUTLINE, ELECTRIC, SHADOW) · `[` `]` aura width (also the AURA WIDTH slider) · `X` FX picker · `W` brainwash · `K` black-hole cursor · `V` cycle edge waves (OFF, ELECTRIC, AQUA, FIRE, GHOST, MAGIC) · `N` stories · `H` edge shape BARS/WAVE · `,` `.` brightness (also the BRIGHT slider) · `P` profiles picker · `Shift+P` save the current look as a profile · `M` next mode · `F` fullscreen · `Esc` leave fullscreen ·
+Keys: `1` `2` `3` modes · `4` AURA (every line, border and glyph on the whole screen glows on the beat; click-through, apps untouched) · `B` bold (paint the strokes too; off by default so nothing gets heavier) · `A` astral sfx on/off · `G` ghost party + nebula background on/off · `C` cycle colour mode (chip opens the picker: PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA) · `T` cycle border style (picker: SOFT, NEON, DOUBLE, OUTLINE, ELECTRIC, SHADOW) · `[` `]` aura width (also the AURA WIDTH slider) · `X` FX picker · `W` brainwash · `Shift+W` phrase pace (2/3/5/10/20/45 s) · `Shift+N` story pace (5/10/20/40/90 s) · `K` black-hole cursor · `V` cycle edge waves (OFF, ELECTRIC, AQUA, FIRE, GHOST, MAGIC) · `N` stories · `H` edge shape BARS/WAVE · `Shift+C` cycle the bars' colour world (STYLE, PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA; also in the `X` picker) · `E` cycle which edges carry the bars (BOTTOM, ALL, TOP, SIDES, TOP+BOTTOM; any mix in the `X` picker) · `,` `.` brightness (also the BRIGHT slider) · `P` profiles picker · `Shift+P` save the current look as a profile · `M` next mode · `F` fullscreen · `Esc` leave fullscreen ·
 `Space` pause · `S` pick source (output monitor or mic) · `R` hot reload on/off ·
 `↑`/`↓` sensitivity · `Q` quit. Move the mouse to show the chrome; it fades after 2 s.
 
@@ -48,3 +48,8 @@ Offline proof: `python3 -c "from party.ui.aura import render_png; render_png('in
 
 Favourite phrases: put `*` at the start of a line in `brainwash/phrases.txt` and it shows four
 times as often. Code never rewrites that file.
+
+Brainwash phrase style (in the `X` picker, each row taps to cycle): font MONO / SERIF / SANS /
+HANDSCRIPT (your Ledaie letters), colour world, size S/M/L/XL, motion FADE / PULSE / RISE / TYPE /
+FLASH. Stories also show Ledaie: lone handscript symbols and random dictionary words with their
+English, read live from `~/ledaie/Ledaie - Dictionary.csv`.

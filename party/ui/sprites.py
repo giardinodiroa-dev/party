@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import math
 from collections import OrderedDict
+from pathlib import Path
 
 import numpy as np
 from OpenGL import GL as gl
@@ -17,6 +18,50 @@ from .. import theme
 
 SIZE = 128
 INK = QColor("#efe8da")
+LEDAIE_FONT = Path(__file__).resolve().parents[2] / "assets" / "fonts" / "LedaieHandscript.ttf"
+_LEDAIE: tuple[str, str] | None = None
+
+
+def ledaie_font() -> tuple[str, str]:
+    """(family, characters the handscript really maps) — pattern from ~/airmouse/airmouse/ui/v3.py."""
+    global _LEDAIE
+    if _LEDAIE is None:
+        from PyQt6.QtGui import QFontDatabase, QFontMetrics, QFont as _QF
+        fam, chars = "", ""
+        fid = QFontDatabase.addApplicationFont(str(LEDAIE_FONT)) if LEDAIE_FONT.exists() else -1
+        fams = QFontDatabase.applicationFontFamilies(fid) if fid >= 0 else []
+        if fams:
+            fam = fams[0]
+            try:
+                from fontTools.ttLib import TTFont
+                cmap = TTFont(str(LEDAIE_FONT)).getBestCmap() or {}
+                chars = "".join(chr(c) for c in sorted(cmap) if chr(c).isprintable() and not chr(c).isspace())
+            except Exception:
+                fm = QFontMetrics(_QF(fam))
+                chars = "".join(chr(c) for c in range(0x21, 0x250) if fm.inFontUcs4(c))
+        _LEDAIE = (fam, chars)
+    return _LEDAIE
+
+
+def draw_handscript(text: str, px: int) -> QImage:
+    """A word in his Ledaie handscript. Letters the font does not map are left out."""
+    fam, chars = ledaie_font()
+    keep = "".join(ch for ch in text if ch in chars or ch.lower() in chars) or text
+    from PyQt6.QtGui import QFont as _QF
+    f = _QF(fam or "DejaVu Sans")
+    f.setPixelSize(px)
+    fm = QFontMetricsF(f)
+    w = int(fm.horizontalAdvance(keep)) + 40
+    h = int(fm.height()) + 24
+    img = QImage(max(2, w), max(2, h), QImage.Format.Format_ARGB32_Premultiplied)
+    img.fill(Qt.GlobalColor.transparent)
+    p = QPainter(img)
+    p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+    p.setFont(f)
+    p.setPen(INK)
+    p.drawText(QRectF(20, 12, w - 40, h - 24), int(Qt.AlignmentFlag.AlignCenter), keep)
+    p.end()
+    return img
 
 
 def _painter(img: QImage) -> QPainter:
@@ -152,8 +197,18 @@ def draw_sprite(kind: str) -> QImage:
     return img
 
 
-def draw_text(text: str, px: int, bold: bool = True) -> QImage:
+PHRASE_FONTS = {"MONO": None, "SERIF": ["DejaVu Serif", "Noto Serif", "serif"],
+                "SANS": ["Noto Sans", "DejaVu Sans", "sans-serif"], "HANDSCRIPT": "ledaie"}
+
+
+def draw_text(text: str, px: int, bold: bool = True, family: str = "MONO") -> QImage:
+    fams = PHRASE_FONTS.get(family)
+    if fams == "ledaie":
+        return draw_handscript(text, px)
     f = theme.font(px * 0.75, bold, 1.4)
+    if fams:
+        f.setFamilies(fams)
+        f.setLetterSpacing(f.SpacingType.AbsoluteSpacing, 0.6)
     fm = QFontMetricsF(f)
     w = int(fm.horizontalAdvance(text)) + 24
     h = int(fm.height()) + 12
@@ -223,8 +278,11 @@ class TextureCache:
             return None
         return self._get(("art", path), make)
 
-    def text(self, text: str, px: int) -> tuple[int, int, int]:
-        return self._get(("text", text, px), lambda: draw_text(text, px))
+    def text(self, text: str, px: int, family: str = "MONO") -> tuple[int, int, int]:
+        return self._get(("text", text, px, family), lambda: draw_text(text, px, True, family))
+
+    def handscript(self, text: str, px: int) -> tuple[int, int, int]:
+        return self._get(("hand", text, px), lambda: draw_handscript(text, px))
 
     def image(self, path: str, max_px: int = 640) -> tuple[int, int, int] | None:
         img = QImage(path)

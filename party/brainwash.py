@@ -40,6 +40,7 @@ class Brainwash:
         self.images: list[str] = []
         self.next_text = 3.0
         self.next_image = 15.0
+        self.gap = 5.0                      # his setting: seconds between phrases (±40%); images every 4 gaps
         self.text: tuple[str, float, float, float, float] | None = None     # phrase, t0, dur, x, y
         self.image: tuple[str, float, float, float, float] | None = None
         self.reload()
@@ -75,7 +76,7 @@ class Brainwash:
             u = (t - t0) / dur
             if u >= 1.0:
                 self.text = None
-                self.next_text = t + self.rng.uniform(5.0, 11.0)
+                self.next_text = t + self.rng.uniform(self.gap * 0.6, self.gap * 1.4)
             else:
                 a = min(1.0, u * 4.0, (1.0 - u) * 4.0) * (0.18 + 0.12 * flash)
                 out.append(Item("text", phrase, x, y - 0.04 * u, 1.0, a))
@@ -87,7 +88,7 @@ class Brainwash:
             u = (t - t0) / dur
             if u >= 1.0:
                 self.image = None
-                self.next_image = t + self.rng.uniform(18.0, 40.0)
+                self.next_image = t + self.rng.uniform(self.gap * 3.0, self.gap * 5.0)
             else:
                 a = min(1.0, u * 3.0, (1.0 - u) * 3.0) * (0.14 + 0.08 * flash)
                 out.append(Item("image", path, x, y - 0.03 * u, 1.0 + 0.1 * u, a))
