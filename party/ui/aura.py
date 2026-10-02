@@ -78,7 +78,8 @@ in vec2 uv; out vec4 frag;
 uniform sampler2D edges; uniform sampler2D halo; uniform sampler2D clean; uniform sampler2D spectrum;
 uniform float time; uniform float hue; uniform float loud; uniform float bass; uniform float flash;
 uniform float coreAmt; uniform float haloAmt; uniform float astralAmt; uniform float ghostAmt;
-uniform int colorMode; uniform int border; uniform int waveStyle; uniform vec2 lens; uniform float lensOn;
+uniform int colorMode; uniform int border; uniform int waveStyle; uniform int waveShape; uniform vec2 lens; uniform float lensOn;
+uniform float bright;
 uniform vec2 res;
 """ + NOISE + """
 vec3 hsv2rgb(vec3 c){ vec3 p = abs(fract(c.xxx + vec3(0.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
@@ -201,6 +202,13 @@ void main(){
     float dist = min(min(dl, dr), min(dt, db));
     float along = (dist == dl || dist == dr) ? uv.y : uv.x;
     float sp = texture(spectrum, vec2(along, 0.5)).r;
+    float gapMask = 1.0;
+    if (waveShape == 1) {                                                      // BARS: 32 discrete bars per edge
+      float slot = along * 32.0;
+      sp = texture(spectrum, vec2((floor(slot) + 0.5) / 32.0, 0.5)).r;
+      float f = fract(slot);
+      gapMask = step(0.12, f) * step(f, 0.88);
+    }
     float hmax = res.y * 0.10 * (0.5 + 0.5 * loud);
     float height = sp * hmax;
     float inside = 1.0 - clamp(dist / max(height, 1.0), 0.0, 1.0);           // 1 at the border, 0 at the crest
@@ -226,10 +234,15 @@ void main(){
       wave = smoothstep(height, height - 14.0, dist) * (0.3 + 0.3 * inside) + sparkle * smoothstep(height + 10.0, height - 4.0, dist) * 0.9;
       waveC = mix(vec3(0.55, 0.25, 1.0), vec3(1.0, 0.85, 0.4), fract(along * 3.0 + time * 0.2));
     }
+    if (waveShape == 1) {                                                      // bars: hard top + bright cap
+      float barA = step(dist, height) * (0.45 + 0.4 * inside);
+      float cap = step(height - 3.0, dist) * step(dist, height) * 0.9;
+      wave = max(wave * 0.6, barA + cap) * gapMask;
+    }
     wave *= 0.75 * (1.0 - content * 0.6);
   }
-  float total = coreA + ringA + sky + wave;
-  float a = clamp(total, 0.0, 0.9);
+  float total = (coreA + ringA + sky + wave) * bright;
+  float a = clamp(total, 0.0, 0.92);
   vec3 rgb = (coreC * coreA + ringC * ringA + skyC * sky + waveC * wave) / max(total, 1e-4);
   if (lensOn > 0.5) { vec4 under = frag; float add = min(a, 1.0 - under.a); frag = vec4(under.rgb + rgb * add, under.a + add); return; }
   frag = vec4(rgb * a, a);
@@ -271,6 +284,8 @@ class AuraParams:
     border: int = 0
     ghost: bool = True
     waves: int = 0                      # index into WAVE_STYLES
+    wave_shape: int = 1                 # 0 wave, 1 bars
+    bright: float = 1.0                 # 0.2..2.5
     lens: bool = False                  # black-hole cursor
     cursor: tuple[float, float] = (0.5, 0.5)   # uv, y down
     spectrum: np.ndarray = field(default_factory=lambda: np.zeros(N_BINS, dtype=np.float32))
@@ -380,6 +395,7 @@ class AuraPipeline:
                     "coreAmt": amt * 0.8 if p.bold else 0.0, "haloAmt": amt * 2.6,
                     "astralAmt": 1.0 if p.astral else 0.0, "ghostAmt": 1.0 if p.ghost else 0.0,
                     "colorMode": int(p.color_mode), "border": int(p.border), "waveStyle": int(p.waves),
+                    "waveShape": int(p.wave_shape), "bright": float(p.bright),
                     "lens": (float(p.cursor[0]), float(p.cursor[1])), "lensOn": 1.0 if p.lens else 0.0,
                     "res": (float(W), float(H))})
         if p.sprites:
@@ -419,6 +435,7 @@ class AuraWindow(QOpenGLWindow):
         self.textures = None
         self.stories = None
         self.brainwash = None
+        self.art = None
         self.flags = {"stories": True, "brainwash": True}
         self.timer = QTimer(self); self.timer.timeout.connect(self.update)
         self._slow = 0
@@ -442,6 +459,8 @@ class AuraWindow(QOpenGLWindow):
             self.textures = TextureCache()
             self.stories = Stories()
             self.brainwash = Brainwash(self.root / "brainwash")
+            from ..art import Art
+            self.art = Art(self.root / "art")
         except Exception as exc:                 # noqa: BLE001 — say it in the UI, never hang
             self.error = f"aura: {exc}"
             self.timer.stop()
@@ -452,7 +471,13 @@ class AuraWindow(QOpenGLWindow):
         if self.flags["stories"]:
             shot = self.stories.frame(t)
             if shot is not None:
-                tex, w, h = self.textures.sprite(shot.kind)
+                painting = self.art.pick(shot.kind) if self.art is not None else None
+                got = self.textures.art(str(painting)) if painting else None
+                if got is not None:
+                    tex, w, h = got
+                    k = (0.3 * H) / max(h, 1); w, h = w * k, h * k     # paintings: ~30% of screen height
+                else:
+                    tex, w, h = self.textures.sprite(shot.kind)
                 sw, sh = w * shot.scale / W, h * shot.scale / H
                 out.append((tex, shot.x - sw / 2, shot.y - sh / 2, sw, sh, shot.alpha, (0.95, 0.95, 1.0)))
                 if shot.caption_alpha > 0.01:
@@ -516,7 +541,11 @@ def render_png(src_png: str, out_png: str, params: AuraParams | None = None, fra
     if sprites:
         from .sprites import TextureCache
         tc = TextureCache()
-        tex, sw, sh = tc.sprite("ufo")
+        art = Path(src_png).parent / "ufo.jpg"
+        got = tc.art(str(art)) if art.exists() else None
+        tex, sw, sh = got if got else tc.sprite("ufo")
+        if got:
+            k = (0.3 * h) / sh; sw, sh = sw * k, sh * k
         p.sprites.append((tex, 0.62, 0.18, sw / w, sh / h, 0.6, (0.95, 0.95, 1.0)))
         ttex, tw, th = tc.text("a saucer cruises past, running lights dimmed, late for something", 20)
         p.sprites.append((ttex, 0.5 - tw / w / 2, 0.86, tw / w, th / h, 0.35, (0.94, 0.91, 0.85)))

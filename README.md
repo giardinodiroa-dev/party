@@ -5,7 +5,7 @@ Lights that move with whatever the laptop is playing. Run: `party` (or `lights`)
 It taps the PipeWire monitor of the default output (read-only; nothing is rerouted or
 recorded) and paints at 60 fps.
 
-Keys: `1` `2` `3` modes · `4` AURA (every line, border and glyph on the whole screen glows on the beat; click-through, apps untouched) · `B` bold (paint the strokes too; off by default so nothing gets heavier) · `A` astral sfx on/off · `G` ghost party + nebula background on/off · `C` cycle colour mode (chip opens the picker: PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA) · `T` cycle border style (picker: SOFT, NEON, DOUBLE, OUTLINE, ELECTRIC, SHADOW) · `[` `]` aura width (also the AURA WIDTH slider) · `X` FX picker · `W` brainwash · `K` black-hole cursor · `V` cycle edge waves (OFF, ELECTRIC, AQUA, FIRE, GHOST, MAGIC) · `N` stories · `M` next mode · `F` fullscreen · `Esc` leave fullscreen ·
+Keys: `1` `2` `3` modes · `4` AURA (every line, border and glyph on the whole screen glows on the beat; click-through, apps untouched) · `B` bold (paint the strokes too; off by default so nothing gets heavier) · `A` astral sfx on/off · `G` ghost party + nebula background on/off · `C` cycle colour mode (chip opens the picker: PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA) · `T` cycle border style (picker: SOFT, NEON, DOUBLE, OUTLINE, ELECTRIC, SHADOW) · `[` `]` aura width (also the AURA WIDTH slider) · `X` FX picker · `W` brainwash · `K` black-hole cursor · `V` cycle edge waves (OFF, ELECTRIC, AQUA, FIRE, GHOST, MAGIC) · `N` stories · `H` edge shape BARS/WAVE · `,` `.` brightness (also the BRIGHT slider) · `P` profiles picker · `Shift+P` save the current look as a profile · `M` next mode · `F` fullscreen · `Esc` leave fullscreen ·
 `Space` pause · `S` pick source (output monitor or mic) · `R` hot reload on/off ·
 `↑`/`↓` sensitivity · `Q` quit. Move the mouse to show the chrome; it fades after 2 s.
 
@@ -33,3 +33,15 @@ Offline proof: `python3 -c "from party.ui.aura import render_png; render_png('in
   photon ring, warping the real pixels beneath. A clean-frame pass keeps what was last seen under
   the lens so the warp never feeds on itself. The arrow cursor itself stays on top (X draws it).
 - Border styles gained WATER (ripple + caustics), GHOST (wisps drifting up), FIRE (flames rising).
+
+### Settings, profiles, art
+
+- Every change is written to `state.json` at once (atomic write), again on close, on hot reload,
+  and on SIGTERM/SIGINT. Tests and verification runs use `PARTY_STATE=<other file>` and never
+  touch yours.
+- Profiles: `Shift+P` saves the current look under a name into `profiles/<name>.json`
+  (modes, colours, borders, waves, brightness, toggles; not geometry or audio source). `P` opens
+  the picker to load one. The live profile shows in the picker.
+- Story art: `art/<actor>.jpg` paintings, generated once (Pollinations, black-keyed to light)
+  and cached. Drop your own `art/<actor>.png` or `art/<actor>-2.png` to override; the line-art
+  sprite is only the stand-in while a painting is missing.

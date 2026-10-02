@@ -13,7 +13,7 @@ from pathlib import Path
 from PyQt6.QtCore import QPointF, QRectF, Qt, QTimer
 from PyQt6.QtGui import (QColor, QCursor, QFontMetricsF, QKeyEvent, QMouseEvent, QPainter,
                          QPainterPath, QPen)
-from PyQt6.QtWidgets import QDialog, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QDialog, QLabel, QLineEdit, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
 
 from .. import theme
 from ..analysis import Levels
@@ -21,8 +21,14 @@ from ..audio import AudioTap, default_monitor, list_sources
 from .aura import BORDER_STYLES, COLOR_MODES, WAVE_STYLES, AuraParams, AuraWindow
 from .visuals import MODES, Scene
 
+import os
+
 ROOT = Path(__file__).resolve().parents[2]
-STATE = ROOT / "state.json"
+STATE = Path(os.environ.get("PARTY_STATE") or ROOT / "state.json")
+PROFILES = ROOT / "profiles"
+PROFILE_KEYS = ("mode", "sensitivity", "hotreload", "aura", "aura_width", "aura_bold", "aura_astral",
+                "aura_color", "aura_border", "aura_ghost", "aura_waves", "aura_shape", "aura_bright",
+                "aura_lens", "aura_brainwash", "aura_stories")
 TITLE_H = 30.0
 BAR_H = 56.0
 EDGE = 7
@@ -93,6 +99,37 @@ QListWidget::item:selected {{ background: {theme.SELECT}; color: {theme.BONE}; }
             self.list.keyPressEvent(e)
 
 
+class TextPrompt(QDialog):
+    """One-line name entry inside the app. Enter = OK, Esc = cancel."""
+
+    def __init__(self, parent: QWidget, title: str, initial: str = "") -> None:
+        super().__init__(parent, Qt.WindowType.Popup | Qt.WindowType.FramelessWindowHint)
+        self.value = ""
+        self.setStyleSheet(theme.panel_qss("QDialog") + f"QDialog {{ border: 1px solid {theme.HAIRLINE}; }}")
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(10, 8, 10, 8)
+        lab = QLabel(title, self)
+        lab.setObjectName("title")
+        self.edit = QLineEdit(self)
+        self.edit.setText(initial)
+        self.edit.selectAll()
+        self.edit.setMinimumWidth(260)
+        lay.addWidget(lab)
+        lay.addWidget(self.edit)
+        self.edit.returnPressed.connect(self._ok)
+        self.edit.setFocus()
+
+    def _ok(self) -> None:
+        self.value = self.edit.text().strip()
+        self.accept()
+
+    def keyPressEvent(self, e: QKeyEvent) -> None:  # noqa: N802
+        if e.key() == Qt.Key.Key_Escape:
+            self.reject()
+        else:
+            super().keyPressEvent(e)
+
+
 class MainWindow(QWidget):
     def __init__(self) -> None:
         super().__init__(None, Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
@@ -122,6 +159,11 @@ class MainWindow(QWidget):
         self.aura_lens = False
         self.aura_brainwash = True
         self.aura_stories = True
+        self.aura_shape = 1
+        self.aura_bright = 1.0
+        self.profile = ""
+        self._drag_bright = False
+        self._bright_rect = QRectF()
         self._t0 = time.monotonic()
         self._drag_width = False
         self._width_rect = QRectF()
@@ -154,6 +196,21 @@ class MainWindow(QWidget):
 
     # -- session -------------------------------------------------------------
     def restore(self, state: dict) -> None:
+        self.restore_settings(state)
+        geo = state.get("geometry")
+        if geo:
+            try:
+                self.restoreGeometry(bytes.fromhex(geo))
+            except Exception:
+                pass
+        self.tap.set_source(self.source)
+        self.frame.start()
+        self.idle.start()
+        self.follow.start()
+        if self.aura_wanted:
+            QTimer.singleShot(300, self.toggle_aura)
+
+    def restore_settings(self, state: dict) -> None:
         self.mode = state.get("mode") if state.get("mode") in MODES else MODES[0]
         self.sensitivity = min(SENS_MAX, max(SENS_MIN, float(state.get("sensitivity", 1.0))))
         self.hotreload_on = bool(state.get("hotreload", True))
@@ -169,27 +226,20 @@ class MainWindow(QWidget):
         self.aura_lens = bool(state.get("aura_lens", False))
         self.aura_brainwash = bool(state.get("aura_brainwash", True))
         self.aura_stories = bool(state.get("aura_stories", True))
+        self.aura_shape = int(state.get("aura_shape", 1)) % 2
+        self.aura_bright = min(2.5, max(0.2, float(state.get("aura_bright", 1.0))))
+        self.profile = str(state.get("profile", ""))
         wanted = state.get("source")
         names = [n for n, _ in list_sources()]
         self.source = wanted if wanted in names else None      # None = AUTO: follow default output
-        geo = state.get("geometry")
-        if geo:
-            try:
-                self.restoreGeometry(bytes.fromhex(geo))
-            except Exception:
-                pass
-        self.tap.set_source(self.source)
-        self.frame.start()
-        self.idle.start()
-        self.follow.start()
-        if self.aura_wanted:
-            QTimer.singleShot(300, self.toggle_aura)
 
     def aura_params(self) -> AuraParams:
         lv = self.levels
         p = AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity,
                        self.aura_width, self.aura_bold, self.aura_astral, time.monotonic() - self._t0,
                        self.aura_color, self.aura_border, self.aura_ghost, self.aura_waves, self.aura_lens)
+        p.wave_shape = self.aura_shape
+        p.bright = self.aura_bright
         p.spectrum = lv.spectrum
         if self.aura is not None:
             self.aura.flags["stories"] = self.aura_stories
@@ -199,7 +249,8 @@ class MainWindow(QWidget):
     def pick_fx(self) -> None:
         items = [("brainwash", f"BRAINWASH · {'ON' if self.aura_brainwash else 'OFF'}"),
                  ("lens", f"BLACK HOLE CURSOR · {'ON' if self.aura_lens else 'OFF'}"),
-                 ("stories", f"STORIES · {'ON' if self.aura_stories else 'OFF'}")]
+                 ("stories", f"STORIES · {'ON' if self.aura_stories else 'OFF'}"),
+                 ("shape", f"EDGE SHAPE · {'BARS' if self.aura_shape else 'WAVE'}")]
         items += [(f"waves:{i}", f"EDGE WAVES · {n}" + (" ·· LIVE" if i == self.aura_waves else ""))
                   for i, n in enumerate(WAVE_STYLES)]
         menu = TinyMenu(self, items, None)
@@ -267,17 +318,78 @@ class MainWindow(QWidget):
                 "aura_border": self.aura_border, "aura_ghost": self.aura_ghost,
                 "aura_waves": self.aura_waves, "aura_lens": self.aura_lens,
                 "aura_brainwash": self.aura_brainwash, "aura_stories": self.aura_stories,
+                "aura_shape": self.aura_shape, "aura_bright": round(self.aura_bright, 3),
+                "profile": self.profile,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
 
     def save(self) -> None:
+        """Atomic: the file is never half-written, and it is written on EVERY change."""
         try:
-            STATE.write_text(json.dumps(self.state(), indent=2))
+            STATE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = STATE.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(self.state(), indent=2))
+            tmp.replace(STATE)
         except OSError:
             pass
 
     def _changed(self) -> None:
-        self.saver.start()
+        self.save()
+        self.saver.start()           # a second pass 2 s later catches geometry after a drag/resize
+
+    # -- profiles: "what I like", by name ---------------------------------------
+    def profile_names(self) -> list[str]:
+        PROFILES.mkdir(exist_ok=True)
+        return sorted(p.stem for p in PROFILES.glob("*.json"))
+
+    def save_profile(self, name: str) -> None:
+        name = "".join(ch for ch in name.strip() if ch.isalnum() or ch in " -_").strip()
+        if not name:
+            return
+        PROFILES.mkdir(exist_ok=True)
+        data = {k: v for k, v in self.state().items() if k in PROFILE_KEYS}
+        tmp = PROFILES / f".{name}.tmp"
+        tmp.write_text(json.dumps(data, indent=2))
+        tmp.replace(PROFILES / f"{name}.json")
+        self.profile = name
+        self._changed()
+
+    def load_profile(self, name: str) -> None:
+        try:
+            data = json.loads((PROFILES / f"{name}.json").read_text())
+        except (OSError, ValueError):
+            return
+        keep = self.state()
+        keep.update({k: v for k, v in data.items() if k in PROFILE_KEYS})
+        keep["profile"] = name
+        aura_on = bool(keep.get("aura", False))
+        was_on = self.aura is not None and self.aura.isVisible()
+        self.restore_settings(keep)
+        if aura_on != was_on:
+            self.toggle_aura()
+        self._changed()
+
+    def pick_profile(self) -> None:
+        names = self.profile_names()
+        items = [("__save__", "SAVE CURRENT LOOK AS…")] + [(n, f"PROFILE · {n}" + (" ·· LIVE" if n == self.profile else "")) for n in names]
+        menu = TinyMenu(self, items, self.profile or None)
+        anchor = self._bar_rect.topLeft() if self._bar_rect.isValid() else QPointF(20, 20)
+        menu.move(self.mapToGlobal(QPointF(anchor.x() + 16, anchor.y() - menu.sizeHint().height() - 8).toPoint()))
+        menu.exec()
+        self._show_chrome()
+        if menu.choice == "__save__":
+            self.prompt_save_profile()
+        elif menu.choice:
+            self.load_profile(menu.choice)
+
+    def prompt_save_profile(self) -> None:
+        dlg = TextPrompt(self, "PROFILE NAME", self.profile or "")
+        anchor = self._bar_rect.topLeft() if self._bar_rect.isValid() else QPointF(20, 20)
+        dlg.move(self.mapToGlobal(QPointF(anchor.x() + 16, anchor.y() - 60).toPoint()))
+        dlg.exec()
+        self._show_chrome()
+        if dlg.value:
+            self.save_profile(dlg.value)
 
     def closeEvent(self, e) -> None:  # noqa: N802
         self.frame.stop()
@@ -358,6 +470,11 @@ class MainWindow(QWidget):
         elif action == "waves":
             self.aura_waves = (self.aura_waves + 1) % len(WAVE_STYLES)
             self._changed()
+        elif action == "shape":
+            self.aura_shape = 1 - self.aura_shape
+            self._changed()
+        elif action == "profiles":
+            self.pick_profile()
         elif action == "border":
             self.pick_border()
         elif action == "source":
@@ -378,7 +495,7 @@ class MainWindow(QWidget):
         self.idle.start()
 
     def _hide_chrome(self) -> None:
-        if self._drag_slider or self._drag_width or self._bar_rect.contains(QPointF(self.mapFromGlobal(QCursor.pos()))):
+        if self._drag_slider or self._drag_width or self._drag_bright or self._bar_rect.contains(QPointF(self.mapFromGlobal(QCursor.pos()))):
             self.idle.start()
             return
         self.chrome_target = 0.0
@@ -449,7 +566,8 @@ class MainWindow(QWidget):
         p.fillRect(QRectF(bar.left(), bar.top(), bar.width(), 1), QColor(theme.HAIRLINE))
         chips = [("mode:PULSE", "pulse", "1"), ("mode:BARS", "bars", "2"), ("mode:ORBS", "orbs", "3"),
                  ("aura", "aura", "4"), ("color", "color", "C"), ("border", "border", "T"),
-                 ("ghost", "ghost", "G"), ("fx", "fx", "X"), ("bold", "bold", "B"), ("astral", "astral", "A"),
+                 ("ghost", "ghost", "G"), ("fx", "fx", "X"), ("profiles", "profiles", "P"),
+                 ("bold", "bold", "B"), ("astral", "astral", "A"),
                  ("fullscreen", "full", "F"), ("source", "source", "S"),
                  ("pause", "play" if self.paused else "pause", "SPC"),
                  ("hotreload", "reload", "R")]
@@ -472,16 +590,19 @@ class MainWindow(QWidget):
             fit_text(p, QRectF(box.left(), box.bottom() - 13, box.width(), 11), key, 7, theme.DIM,
                      True, 1.2, 6.5, Qt.AlignmentFlag.AlignCenter)
             self._hits.append((box, action))
-            x += 48
-        # two sliders share the rest of the bar: sensitivity, aura width
-        avail = max(140.0, bar.right() - x - 40)
-        half = (avail - 24) / 2
-        self._slider_rect = self._slider(p, bar, QRectF(x + 24, bar.center().y() - 1, half, 2),
+            x += 44
+        # three sliders share the rest of the bar: sensitivity, aura width, brightness
+        avail = max(180.0, bar.right() - x - 36)
+        third = (avail - 40) / 3
+        self._slider_rect = self._slider(p, bar, QRectF(x + 20, bar.center().y() - 1, third, 2),
                                          (self.sensitivity - SENS_MIN) / (SENS_MAX - SENS_MIN),
-                                         f"SENSITIVITY {self.sensitivity:.1f}×  ↑↓")
-        self._width_rect = self._slider(p, bar, QRectF(x + 24 + half + 24, bar.center().y() - 1, half, 2),
+                                         f"SENS {self.sensitivity:.1f}×  ↑↓")
+        self._width_rect = self._slider(p, bar, QRectF(x + 20 + third + 20, bar.center().y() - 1, third, 2),
                                         (self.aura_width - 0.5) / 5.5,
-                                        f"AURA WIDTH {self.aura_width:.1f}  [ ]")
+                                        f"WIDTH {self.aura_width:.1f}  [ ]")
+        self._bright_rect = self._slider(p, bar, QRectF(x + 20 + 2 * (third + 20), bar.center().y() - 1, third, 2),
+                                         (self.aura_bright - 0.2) / 2.3,
+                                         f"BRIGHT {self.aura_bright:.1f}  , .")
 
     def _slider(self, p: QPainter, bar: QRectF, track: QRectF, t: float, label: str) -> QRectF:
         p.fillRect(track, QColor(theme.FAINT))
@@ -539,6 +660,11 @@ class MainWindow(QWidget):
                 path.lineTo(QPointF(c.x() + r * 0.6 - r * 0.4 * (k_ + 0.5), c.y() + r * 0.6))
                 path.lineTo(QPointF(c.x() + r * 0.6 - r * 0.4 * (k_ + 1.0), c.y() + r))
             p.drawPath(path)
+        elif kind == "profiles":
+            p.drawRoundedRect(QRectF(c.x() - r * 0.8, c.y() - r * 0.6, r * 1.6, r * 1.3), 3, 3)
+            p.drawLine(QPointF(c.x() - r * 0.8, c.y() - r * 0.6), QPointF(c.x() - r * 0.2, c.y() - r * 0.6))
+            p.drawLine(QPointF(c.x() - r * 0.2, c.y() - r * 0.6), QPointF(c.x(), c.y() - r * 0.95))
+            p.drawLine(QPointF(c.x(), c.y() - r * 0.95), QPointF(c.x() + r * 0.8, c.y() - r * 0.95))
         elif kind == "fx":
             p.drawEllipse(c, r * 0.28, r * 0.28)
             for ang in (0, 60, 120, 180, 240, 300):
@@ -627,6 +753,10 @@ class MainWindow(QWidget):
                 self._drag_width = True
                 self._slide_width(pos.x())
                 return
+            if self._bright_rect.contains(pos):
+                self._drag_bright = True
+                self._slide_bright(pos.x())
+                return
         if pos.y() < TITLE_H and not self.isFullScreen():
             self.windowHandle().startSystemMove()
 
@@ -641,10 +771,20 @@ class MainWindow(QWidget):
             self._slide(e.position().x())
         if self._drag_width:
             self._slide_width(e.position().x())
+        if self._drag_bright:
+            self._slide_bright(e.position().x())
 
     def mouseReleaseEvent(self, _e: QMouseEvent) -> None:  # noqa: N802
         self._drag_slider = False
         self._drag_width = False
+        self._drag_bright = False
+
+    def _slide_bright(self, x: float) -> None:
+        track_l = self._bright_rect.left() + 8
+        track_w = max(1.0, self._bright_rect.width() - 16)
+        t = min(1.0, max(0.0, (x - track_l) / track_w))
+        self.aura_bright = 0.2 + t * 2.3
+        self._changed()
 
     def _slide_width(self, x: float) -> None:
         track_l = self._width_rect.left() + 8
@@ -701,6 +841,16 @@ class MainWindow(QWidget):
             self._act("waves")
         elif k == Qt.Key.Key_N:
             self._act("stories")
+        elif k == Qt.Key.Key_H:
+            self._act("shape")
+        elif k == Qt.Key.Key_P and e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self.prompt_save_profile()
+        elif k == Qt.Key.Key_P:
+            self.pick_profile()
+        elif k == Qt.Key.Key_Comma:
+            self.aura_bright = max(0.2, self.aura_bright - 0.1); self._changed()
+        elif k == Qt.Key.Key_Period:
+            self.aura_bright = min(2.5, self.aura_bright + 0.1); self._changed()
         elif k == Qt.Key.Key_BracketLeft:
             self.nudge_width(-0.25)
         elif k == Qt.Key.Key_BracketRight:

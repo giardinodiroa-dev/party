@@ -77,6 +77,16 @@ def main(argv: list[str] | None = None) -> int:
 
     from party.hotreload import install as install_hotreload
     install_hotreload(app, window, ROOT, is_enabled=lambda: window.hotreload_on)
+
+    # Never close without saving: a kill signal closes the window (which saves), then quits.
+    import signal
+    from PyQt6.QtCore import QTimer
+    def _bye(*_a):
+        window.close()
+        app.quit()
+    signal.signal(signal.SIGTERM, _bye)
+    signal.signal(signal.SIGINT, _bye)
+    tick = QTimer(); tick.start(300); tick.timeout.connect(lambda: None)   # lets Python run signal handlers
     return app.exec()
 
 

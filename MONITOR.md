@@ -33,3 +33,10 @@ His words (2026-10-02, fifth ask): water/ghost/fire borders; a brainwash feature
 screen borders (electric, aqua, fire, ghost, magical); a tiny black-hole cursor that distorts what
 is around it; ~200 random stories in the void (spaceship, alien at the gas station, alien kiss,
 Jesus, angels…). Built: all five; see README.
+
+His words (2026-10-02, sixth ask): "don't ever close the app without saving the settings… this app
+should save the configuration"; "the stories have to be real drawings not handdrawn sketches";
+"I asked for sound bars coming out of the sides of the screen"; "add brightness adjustment… and
+profile saving depending on what I like". Built: atomic save-on-change + SIGTERM save +
+PARTY_STATE for tests (root cause of the loss: my test runs overwrote his state.json); per-actor
+paintings in art/; BARS edge shape (default); BRIGHT slider; profiles P / Shift+P.

@@ -168,6 +168,21 @@ def draw_text(text: str, px: int, bold: bool = True) -> QImage:
     return img
 
 
+def black_keyed(img: QImage) -> QImage:
+    """A painting on pure black → premultiplied RGBA whose alpha is its light. Black becomes void."""
+    img = img.convertToFormat(QImage.Format.Format_RGBA8888)
+    w, h = img.width(), img.height()
+    a = np.frombuffer(img.constBits().asarray(h * img.bytesPerLine()), dtype=np.uint8)
+    a = a.reshape(h, img.bytesPerLine() // 4, 4)[:, :w, :].astype(np.float32) / 255.0
+    luma = a[:, :, :3].max(axis=2)
+    alpha = np.clip((luma - 0.06) / 0.5, 0.0, 1.0)            # soft key: faint glow stays faint
+    out = np.empty((h, w, 4), dtype=np.uint8)
+    out[:, :, :3] = (a[:, :, :3] * alpha[:, :, None] * 255).astype(np.uint8)
+    out[:, :, 3] = (alpha * 255).astype(np.uint8)
+    res = QImage(out.tobytes(), w, h, w * 4, QImage.Format.Format_RGBA8888_Premultiplied)
+    return res.copy()
+
+
 def upload(img: QImage) -> tuple[int, int, int]:
     """QImage → GL texture (RGBA8). Returns (tex, w, h). Needs a current context."""
     img = img.convertToFormat(QImage.Format.Format_RGBA8888_Premultiplied)
@@ -195,6 +210,18 @@ class TextureCache:
 
     def sprite(self, kind: str) -> tuple[int, int, int]:
         return self._get(("sprite", kind), lambda: draw_sprite(kind))
+
+    def art(self, path: str, max_px: int = 512) -> tuple[int, int, int] | None:
+        """A painting on black, keyed to light. None if the file does not load."""
+        def make():
+            img = QImage(path)
+            img = img.copy(0, 0, img.width(), int(img.height() * 0.88))     # drop the generator's bottom strip
+            if max(img.width(), img.height()) > max_px:
+                img = img.scaled(max_px, max_px, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            return black_keyed(img)
+        if QImage(path).isNull():
+            return None
+        return self._get(("art", path), make)
 
     def text(self, text: str, px: int) -> tuple[int, int, int]:
         return self._get(("text", text, px), lambda: draw_text(text, px))

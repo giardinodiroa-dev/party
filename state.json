@@ -1,1 +1,22 @@
-{"mode": "PULSE", "sensitivity": 1.0, "source": null, "fullscreen": false, "hotreload": true, "aura": false, "aura_width": 2.0, "aura_bold": false, "aura_astral": true, "aura_color": 0, "aura_border": 0, "aura_ghost": true, "aura_waves": 0, "aura_lens": false, "aura_brainwash": true, "aura_stories": true}
+{
+  "mode": "PULSE",
+  "sensitivity": 1.0,
+  "source": null,
+  "fullscreen": false,
+  "aura": true,
+  "aura_width": 1.03,
+  "aura_bold": true,
+  "aura_astral": true,
+  "aura_color": 4,
+  "aura_border": 0,
+  "aura_ghost": true,
+  "aura_waves": 0,
+  "aura_lens": false,
+  "aura_brainwash": true,
+  "aura_stories": true,
+  "aura_shape": 1,
+  "aura_bright": 1.0,
+  "profile": "",
+  "hotreload": true,
+  "geometry": "01d9d0cb00030000000000cb000000680000048a00000297000000cb000000680000048a0000029700000000000000000556000000cb000000680000048a00000297"
+}

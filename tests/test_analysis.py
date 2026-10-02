@@ -101,3 +101,44 @@ def test_brainwash_defaults(tmp_path):
     assert (tmp_path / "phrases.txt").exists() and b.phrases
     items = [b.frame(t) for t in (3.5, 4.0, 5.0)]
     assert any(items)
+
+
+def _window(tmp_path, monkeypatch):
+    import os
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    monkeypatch.setenv("PARTY_STATE", str(tmp_path / "state.json"))
+    from PyQt6.QtWidgets import QApplication
+    global _APP
+    _APP = QApplication.instance() or QApplication([])
+    import party.ui.main_window as mw
+    mw.STATE = tmp_path / "state.json"
+    mw.PROFILES = tmp_path / "profiles"
+    w = mw.MainWindow()
+    _KEEP.append(w)
+    return mw, w
+
+
+_APP = None
+_KEEP: list = []
+
+
+def test_state_saves_atomically_to_env_path(tmp_path, monkeypatch):
+    mw, w = _window(tmp_path, monkeypatch)
+    w.aura_bright = 1.7
+    w.aura_shape = 0
+    w._changed()
+    import json
+    data = json.loads((tmp_path / "state.json").read_text())
+    assert data["aura_bright"] == 1.7 and data["aura_shape"] == 0
+    assert not (tmp_path / "state.json.tmp").exists()
+
+
+def test_profile_round_trip(tmp_path, monkeypatch):
+    mw, w = _window(tmp_path, monkeypatch)
+    w.aura_color = 3; w.aura_border = 8; w.aura_bright = 0.6; w.aura_waves = 2
+    w.save_profile("holy fire")
+    assert "holy fire" in w.profile_names()
+    w.aura_color = 0; w.aura_border = 0; w.aura_bright = 1.0; w.aura_waves = 0
+    w.load_profile("holy fire")
+    assert (w.aura_color, w.aura_border, w.aura_bright, w.aura_waves) == (3, 8, 0.6, 2)
+    assert w.profile == "holy fire"
