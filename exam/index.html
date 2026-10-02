@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Party · eye exam</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="static/stage.css">
+<style>
+body{padding:18px 16px 80px;max-width:1180px;margin:0 auto}
+h1{font-size:12px;letter-spacing:3px;color:var(--bone);margin:0 0 4px}.sub{color:var(--dim);font-size:11px;margin:0 0 18px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:22px}
+.card{background:var(--panel);border:1px solid var(--hair);border-radius:4px;padding:12px}
+.card h2{font-size:11px;letter-spacing:2px;color:var(--bone);margin:0 0 8px;display:flex;justify-content:space-between}
+.card h2 small{color:var(--dim);letter-spacing:0;font-weight:normal}
+.frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;border:1px solid var(--hair)}
+.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.frame .load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--bone);font:bold 11px/1 monospace;letter-spacing:2px;background:rgba(7,7,10,.6)}
+.frame .load span{border:1px solid var(--bone);padding:12px 18px;border-radius:4px}
+.fb{margin-top:10px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+textarea{width:100%;min-height:72px;background:var(--void);color:var(--bone);border:1px solid var(--hair);border-radius:4px;padding:8px;font:12px/1.4 monospace;resize:vertical}
+textarea:focus{outline:0;border-color:var(--good)}
+.btns{display:flex;flex-direction:column;gap:6px}
+button.b{background:var(--panel);color:var(--text);border:1px solid var(--hair);border-radius:4px;padding:7px 10px;font:10px/1 monospace;letter-spacing:1.5px;cursor:pointer}
+button.b:hover{color:var(--bone);border-color:#3a3550}button.b.good{color:var(--good)}button.b.bad{color:var(--bad)}
+.status{color:var(--dim);font-size:10px;margin-top:6px;min-height:12px}
+.done{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--hair);padding:12px 16px;display:flex;gap:14px;align-items:center;justify-content:center}
+.done button{background:var(--void);color:var(--good);border:1px solid var(--good);border-radius:4px;padding:10px 18px;font:bold 11px/1 monospace;letter-spacing:2px;cursor:pointer}
+.done span{color:var(--dim);font-size:11px}
+</style></head><body>
+<h1>PARTY · EYE EXAM</h1>
+<p class="sub">Nothing plays by itself. Press ▶ on a clip to load it, then ▶ PLAY inside it. Under each clip, write what is good and what is bad, and press SAVE (or GOOD / BAD as a quick verdict). When you have gone through what you want, press I'M DONE at the bottom and I come build from your words.</p>
+<div class="grid" id="grid"></div>
+<div class="done"><span id="count">0 clips with feedback</span><button id="doneBtn">I'M DONE · GO BUILD</button></div>
+<script>
+const NAMES = {"saucer":"flying saucer","satellite":"satellite visit","goldfish":"goldfish in space","alien-gas":"alien at the pump","girl1":"anime girl · wink and kiss","girl2":"anime girl · hair flip and wave","goddess":"nebula goddess · kiss","alien-kiss":"alien kiss · dissolves","crowd":"crowd cheering","jewels":"jewels · blessing","feast":"the feast","vision-flying":"vision · flying","vision-skydive":"vision · skydiving","vision-castle":"vision · castle in the clouds","vision-horse":"vision · riding a horse","vision-hug":"vision · hugged by children"};
+async function post(url, data){ const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); return r.json(); }
+async function main(){
+  const {clips, feedback} = await (await fetch('clips.json')).json();
+  const grid = document.getElementById('grid');
+  for (const id of clips){
+    const prev = (feedback.clips||{})[id] || {};
+    const card = document.createElement('div'); card.className='card';
+    card.innerHTML = `<h2><span>${(NAMES[id]||id).toUpperCase()}</span><small>${id}.html</small></h2>
+      <div class="frame"><div class="load"><span>▶ LOAD CLIP</span></div></div>
+      <div class="fb"><textarea placeholder="what is good · what is bad · what you want instead">${prev.text||''}</textarea>
+      <div class="btns"><button class="b good">GOOD</button><button class="b bad">BAD</button><button class="b save">SAVE</button></div></div>
+      <div class="status">${prev.at ? 'saved '+prev.at+(prev.verdict? ' · '+prev.verdict:'') : ''}</div>`;
+    const frame = card.querySelector('.frame'), load = card.querySelector('.load');
+    load.addEventListener('click', ()=>{ const f = document.createElement('iframe'); f.src = 'clips/'+id+'.html'; f.loading='eager'; frame.appendChild(f); load.remove(); });
+    const ta = card.querySelector('textarea'), st = card.querySelector('.status');
+    const send = async (verdict)=>{ const r = await post('/feedback',{clip:id,text:ta.value,verdict}); st.textContent = 'saved · '+(verdict||'')+' · '+r.saved+' clips so far'; document.getElementById('count').textContent = r.saved+' clips with feedback'; };
+    card.querySelector('.good').addEventListener('click',()=>send('good'));
+    card.querySelector('.bad').addEventListener('click',()=>send('bad'));
+    card.querySelector('.save').addEventListener('click',()=>send(''));
+    grid.appendChild(card);
+  }
+  document.getElementById('count').textContent = Object.keys(feedback.clips||{}).length+' clips with feedback';
+  document.getElementById('doneBtn').addEventListener('click', async ()=>{ const r = await post('/done',{}); document.getElementById('doneBtn').textContent = 'SENT · '+r.saved+' CLIPS · CLAUDE WILL READ IT'; });
+}
+main();
+</script></body></html>

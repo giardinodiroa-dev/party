@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs>
+<linearGradient id="shaft" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3c4" stop-opacity=".55"/><stop offset="1" stop-color="#fff3c4" stop-opacity="0"/></linearGradient>
+<linearGradient id="gemA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#5ee3b0"/><stop offset=".6" stop-color="#0f7a55"/><stop offset="1" stop-color="#063b2a"/></linearGradient>
+<linearGradient id="gemB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#ff7e9e"/><stop offset=".6" stop-color="#b0163f"/><stop offset="1" stop-color="#4a0618"/></linearGradient>
+<linearGradient id="gemC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".25" stop-color="#7eb8ff"/><stop offset=".6" stop-color="#1c4fb0"/><stop offset="1" stop-color="#0a1f4a"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<polygon id="shaft" points="380,0 580,0 760,540 200,540" fill="url(#shaft)" opacity="0"/>
+<g id="glints"><circle class="gl" cx="391" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="385" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="554" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="644" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="500" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="542" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="650" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="356" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="626" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="535" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="381" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="391" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="596" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="644" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="647" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="307" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="381" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="376" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="549" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="627" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="430" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="623" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="613" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="621" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="335" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="360" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="652" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="511" cy="-10" r="2" fill="#fff" opacity="0"/>
+<circle class="gl" cx="391" cy="-10" r="1" fill="#fff" opacity="0"/>
+<circle class="gl" cx="593" cy="-10" r="2" fill="#fff" opacity="0"/></g>
+<g id="gems">
+ <g class="gem" transform="translate(300 -80)"><polygon points="0,-60 52,-18 32,52 -32,52 -52,-18" fill="url(#gemA)" stroke="#bfffe6" stroke-width="2"/><polyline points="-52,-18 0,-10 52,-18 32,52 0,-10 -32,52 -52,-18" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/><polygon points="0,-60 0,-10 -52,-18" fill="#fff" opacity=".25"/></g>
+ <g class="gem" transform="translate(480 -80)"><polygon points="0,-62 44,-30 60,20 0,66 -60,20 -44,-30" fill="url(#gemB)" stroke="#ffd1dc" stroke-width="2"/><polyline points="-44,-30 0,-12 44,-30 60,20 0,-12 -60,20 0,66 0,-12" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/><polygon points="0,-62 0,-12 -44,-30" fill="#fff" opacity=".25"/></g>
+ <g class="gem" transform="translate(660 -80)"><polygon points="0,-50 60,-8 0,70 -60,-8" fill="url(#gemC)" stroke="#d6e8ff" stroke-width="2"/><polyline points="-60,-8 0,8 60,-8 0,70 0,8" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/><polygon points="0,-50 0,8 -60,-8" fill="#fff" opacity=".25"/></g>
+</g>
+<text id="word" x="480" y="470" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="26" fill="#ffe9a8" letter-spacing="4" opacity="0" filter="url(#glow)">BLESSED · received</text></svg>
+<script>window.scene=function(tl){
+  gsap.set('.gem',{transformOrigin:'50% 50%'});
+  tl.to('#shaft',{opacity:1,duration:1.6,ease:'power2.out'},0);
+  tl.to('.gl',{y:600,opacity:.9,duration:'random(3,5)',stagger:.08,ease:'none'},0.4);
+  tl.to('.gem',{y:260,rotation:'+=180',duration:3.2,stagger:.6,ease:'power1.inOut'},0.8);
+  tl.to('.gem',{rotation:'+=360',duration:5,ease:'none'},4.0);
+  tl.to('.gem:nth-child(2)',{scale:2.2,x:0,y:240,duration:1.2,ease:'power2.out'},4.6); tl.to('.gem:nth-child(2)',{scale:1,duration:1,ease:'power2.in'},7.4);
+  tl.to('.gem polygon:last-child',{opacity:.9,duration:.12,repeat:12,yoyo:true,stagger:.1},4.0);
+  tl.to('#word',{opacity:1,duration:.8},5.2); tl.to('#word',{opacity:0,duration:.8},8.4);
+  tl.to('.gem',{y:620,duration:1.6,ease:'power2.in',stagger:.15},8.8); tl.to('#shaft',{opacity:0,duration:1.2},9.4);
+  say(tl,'.caption','a shaft of light opens from above',0.6,2.4); say(tl,'.caption','jewels come down through it, one turns in front of you',3.4,3); say(tl,'.caption','blessed. received. keep it.',6.8,2.4);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

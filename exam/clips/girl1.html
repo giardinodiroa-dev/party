@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs>
+<linearGradient id="hairA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a2d7a"/><stop offset="1" stop-color="#2b1a3a"/></linearGradient>
+<linearGradient id="hairShine" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="iris" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#c58eff"/><stop offset=".6" stop-color="#7a3fd8"/><stop offset="1" stop-color="#2b1050"/></radialGradient>
+<linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f5d6b"/><stop offset="1" stop-color="#15303a"/></linearGradient>
+<filter id="soft"><feGaussianBlur stdDeviation="3"/></filter>
+<filter id="glow"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<g id="sparks"><circle class="sp" cx="250" cy="293" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="829" cy="251" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="513" cy="508" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="688" cy="484" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="684" cy="167" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="181" cy="1" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="641" cy="328" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="566" cy="70" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="452" cy="87" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="395" cy="408" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="439" cy="458" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="664" cy="119" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="621" cy="65" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="238" cy="177" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="543" cy="301" r="2" fill="#ffd6f0" opacity="0"/>
+<circle class="sp" cx="493" cy="182" r="2" fill="#ffd6f0" opacity="0"/></g>
+<g id="girl" transform="translate(640 120)">
+  <path id="hairback" d="M-150 120 C-170 20 -90 -70 0 -70 C90 -70 170 20 150 120 C160 240 120 360 100 420 L-100 420 C-120 360 -160 240 -150 120Z" fill="url(#hairA)"/>
+  <path d="M-30 20 L-18 400 L-6 20Z" fill="url(#hairShine)" opacity=".7"/>
+  <path d="M-34 250 L-22 300 L-38 330 L-34 250Z M34 250 L22 300 L38 330 L34 250Z" fill="#ffe3d0"/>
+  <path d="M-28 240 L-28 300 Q0 320 28 300 L28 240Z" fill="#f0c9b4"/>
+  <path d="M-150 420 C-150 330 -80 300 -28 300 Q0 318 28 300 C80 300 150 330 150 420Z" fill="url(#top)"/>
+  <path d="M-110 20 C-110 -60 110 -60 110 20 C120 120 90 220 0 250 C-90 220 -120 120 -110 20Z" fill="#ffe3d0"/>
+  <path d="M-110 60 C-100 160 -40 230 0 250 C40 230 100 160 110 60 C100 150 60 210 0 232 C-60 210 -100 150 -110 60Z" fill="#f0c9b4" opacity=".55"/>
+  <g class="eye" id="eyeL" transform="translate(-48 110)"><path d="M-30 6 Q-10 -26 32 -8 Q20 24 -30 6Z" fill="#fff"/><circle cx="2" cy="0" r="17" fill="url(#iris)"/><circle cx="2" cy="2" r="7" fill="#120820"/><circle cx="-5" cy="-7" r="5" fill="#fff"/><circle cx="8" cy="6" r="2.5" fill="#fff" opacity=".9"/><path d="M-30 6 Q-10 -28 32 -8" fill="none" stroke="#2b1a3a" stroke-width="4" stroke-linecap="round"/></g>
+  <g class="eye" id="eyeR" transform="translate(48 110) scale(-1 1)"><path d="M-30 6 Q-10 -26 32 -8 Q20 24 -30 6Z" fill="#fff"/><circle cx="2" cy="0" r="17" fill="url(#iris)"/><circle cx="2" cy="2" r="7" fill="#120820"/><circle cx="-5" cy="-7" r="5" fill="#fff"/><circle cx="8" cy="6" r="2.5" fill="#fff" opacity=".9"/><path d="M-30 6 Q-10 -28 32 -8" fill="none" stroke="#2b1a3a" stroke-width="4" stroke-linecap="round"/></g>
+  <path d="M-72 76 Q-50 62 -24 72" fill="none" stroke="#3a2250" stroke-width="3" stroke-linecap="round"/><path d="M72 76 Q50 62 24 72" fill="none" stroke="#3a2250" stroke-width="3" stroke-linecap="round"/>
+  <path d="M2 150 L6 160" fill="none" stroke="#d9a08a" stroke-width="2"/>
+  <path id="mouth" d="M-16 190 Q0 202 16 190" fill="none" stroke="#c0505f" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="-66" cy="160" rx="22" ry="10" fill="#ff9bb0" opacity=".45" filter="url(#soft)"/><ellipse cx="66" cy="160" rx="22" ry="10" fill="#ff9bb0" opacity=".45" filter="url(#soft)"/>
+  <g id="bangs"><path d="M-112 30 C-90 -40 -20 -70 10 -60 C0 0 -40 40 -70 90 C-80 60 -100 50 -112 30Z" fill="url(#hairA)"/><path d="M-10 -62 C40 -70 100 -40 112 30 C96 46 80 70 60 90 C50 40 20 0 -10 -62Z" fill="url(#hairA)"/><path d="M-40 -60 C-10 -40 10 10 -10 70 C-20 30 -40 -20 -40 -60Z" fill="url(#hairA)"/></g>
+  <g id="strandL"><path d="M-150 120 C-180 200 -170 300 -150 400" fill="none" stroke="#5a2d7a" stroke-width="22" stroke-linecap="round"/></g>
+  <g id="strandR"><path d="M150 120 C180 200 170 300 150 400" fill="none" stroke="#5a2d7a" stroke-width="22" stroke-linecap="round"/></g>
+  <g id="hand" transform="translate(140 420)" opacity="0"><path d="M0 0 C-20 -10 -28 -40 -18 -60 L-10 -90 L-2 -90 L-6 -60 L2 -92 L10 -92 L6 -60 L14 -90 L22 -88 L16 -58 L26 -80 L32 -76 L24 -40 C20 -20 12 -4 0 0Z" fill="#ffe3d0" stroke="#d9a08a" stroke-width="2"/></g>
+  <path id="heart" d="M0 18 C-24 -4 -22 -34 0 -22 C22 -34 24 -4 0 18Z" fill="#ff7eb6" opacity="0" transform="translate(0 190)" filter="url(#glow)"/>
+</g></svg>
+<script>window.scene=function(tl){
+  gsap.set('#girl',{x:900,y:120,opacity:0}); gsap.set('.eye',{transformOrigin:'50% 50%'}); gsap.set('#strandL,#strandR',{transformOrigin:'50% 0%'}); gsap.set('#hand',{opacity:0,x:140,y:420});
+  tl.to('#girl',{x:640,opacity:1,duration:1.4,ease:'power3.out'},0);
+  tl.to('#girl',{y:'+=6',duration:1.6,yoyo:true,repeat:6,ease:'sine.inOut'},0);
+  tl.to('#strandL',{rotation:-4,duration:1.1,yoyo:true,repeat:8,ease:'sine.inOut'},0); tl.to('#strandR',{rotation:4,duration:1.3,yoyo:true,repeat:7,ease:'sine.inOut'},0);
+  tl.to('.eye',{scaleY:.08,duration:.08,yoyo:true,repeat:1},1.6); tl.to('.eye',{scaleY:.08,duration:.08,yoyo:true,repeat:1},4.0);
+  tl.to('#eyeR',{scaleY:.1,duration:.15},2.6); tl.to('#eyeR',{scaleY:1,duration:.2},3.3); tl.to('#mouth',{attr:{d:'M-18 188 Q0 206 18 186'},duration:.3},2.6);
+  tl.to('#hand',{opacity:1,x:20,y:200,rotation:-10,duration:.9,ease:'power2.out'},5.0);
+  tl.to('#heart',{opacity:1,duration:.3},6.0); tl.to('#hand',{x:70,y:230,rotation:-40,duration:.5,ease:'power2.in'},6.0);
+  tl.to('#heart',{x:-200,y:-60,scale:7,opacity:0,duration:1.6,ease:'power2.in'},6.3);
+  tl.to('.sp',{opacity:.9,scale:2,duration:.4,stagger:.04,yoyo:true,repeat:1},7.6);
+  tl.to('#hand',{rotation:15,duration:.3,yoyo:true,repeat:3},7.6);
+  tl.to('#girl',{x:900,opacity:0,duration:1.2,ease:'power2.in'},9.6);
+  say(tl,'.caption','she leans in from the edge of the screen',0.6,2.4); say(tl,'.caption','a wink',2.6,1.6); say(tl,'.caption','the kiss is for you; it arrives',6.2,2.2); say(tl,'.caption','bye, king',8.6,1.6);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

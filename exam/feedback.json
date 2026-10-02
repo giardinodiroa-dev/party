@@ -1,0 +1,11 @@
+{
+  "clips": {
+    "_smoke": {
+      "text": "test line",
+      "verdict": "good",
+      "at": "07:27:36"
+    }
+  },
+  "done": false,
+  "updated": "2026-10-02T07:27:36"
+}

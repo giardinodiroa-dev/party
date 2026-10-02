@@ -1,0 +1,78 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs><filter id="cl"><feTurbulence type="fractalNoise" baseFrequency=".006" numOctaves="4" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .92  0 0 0 0 .95  0 0 0 0 1  0 0 0 1.6 -.55"/><feGaussianBlur stdDeviation="2"/></filter>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a3a"/><stop offset=".55" stop-color="#2b4a8a"/><stop offset="1" stop-color="#c9a0d8"/></linearGradient>
+<radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6d0"/><stop offset=".3" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient></defs>
+<rect width="960" height="540" fill="url(#sky)"/><rect id="plain" y="300" width="960" height="240" fill="#2f5d3a"/>
+<g id="hills"><path d="M-200 320 Q100 240 400 310 T1000 300 T1600 320 L1600 340 L-200 340Z" fill="#1f3f2a"/></g>
+<g id="streaks"><line class="gs" x1="85" y1="420" x2="516" y2="420" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="942" y1="475" x2="472" y2="475" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="22" y1="462" x2="633" y2="462" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="393" y1="464" x2="144" y2="464" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="593" y1="403" x2="98" y2="403" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="233" y1="512" x2="65" y2="512" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="537" y1="380" x2="317" y2="380" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="547" y1="332" x2="581" y2="332" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="152" y1="408" x2="68" y2="408" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="473" y1="335" x2="694" y2="335" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="537" y1="340" x2="203" y2="340" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="27" y1="446" x2="854" y2="446" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="526" y1="442" x2="840" y2="442" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="347" y1="446" x2="749" y2="446" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="427" y1="345" x2="290" y2="345" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="0" y1="512" x2="52" y2="512" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="139" y1="510" x2="635" y2="510" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="805" y1="401" x2="961" y2="401" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="243" y1="516" x2="576" y2="516" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="851" y1="489" x2="723" y2="489" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="891" y1="447" x2="830" y2="447" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="129" y1="452" x2="200" y2="452" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="510" y1="471" x2="315" y2="471" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="750" y1="496" x2="588" y2="496" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="855" y1="468" x2="734" y2="468" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="896" y1="438" x2="961" y2="438" stroke="#9fcf96" stroke-width="1" opacity=".5"/>
+<line class="gs" x1="375" y1="524" x2="621" y2="524" stroke="#9fcf96" stroke-width="3" opacity=".5"/>
+<line class="gs" x1="578" y1="356" x2="321" y2="356" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="576" y1="339" x2="367" y2="339" stroke="#9fcf96" stroke-width="2" opacity=".5"/>
+<line class="gs" x1="310" y1="435" x2="331" y2="435" stroke="#9fcf96" stroke-width="1" opacity=".5"/></g>
+<g id="mane"><path class="m" d="M330 540 Q310 440 340 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/>
+<path class="m" d="M355 540 Q335 440 365 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/>
+<path class="m" d="M380 540 Q360 440 390 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/>
+<path class="m" d="M405 540 Q385 440 415 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/>
+<path class="m" d="M430 540 Q410 440 440 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/>
+<path class="m" d="M455 540 Q435 440 465 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/>
+<path class="m" d="M480 540 Q460 440 490 360" fill="none" stroke="#3a2a1a" stroke-width="14" stroke-linecap="round"/></g>
+<ellipse id="head" cx="480" cy="520" rx="150" ry="60" fill="#5a3a1a"/><path d="M440 470 Q480 440 520 470" fill="none" stroke="#2b1a0a" stroke-width="10"/>
+<g id="dust"><circle class="d" cx="462" cy="478" r="3" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="658" cy="474" r="2" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="98" cy="513" r="3" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="271" cy="528" r="5" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="894" cy="514" r="4" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="411" cy="465" r="3" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="701" cy="509" r="4" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="725" cy="535" r="2" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="897" cy="500" r="3" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="163" cy="441" r="4" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="652" cy="484" r="5" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="862" cy="518" r="5" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="912" cy="434" r="2" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="195" cy="535" r="5" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="435" cy="428" r="4" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="385" cy="504" r="4" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="267" cy="487" r="4" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="1" cy="434" r="3" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="5" cy="480" r="3" fill="#d8c8a0" opacity="0"/>
+<circle class="d" cx="838" cy="509" r="4" fill="#d8c8a0" opacity="0"/></g>
+<rect id="vig" width="960" height="540" fill="#ffd27a" opacity="0"/></svg>
+<script>window.scene=function(tl){
+  const beat=.52;
+  tl.to('svg',{y:-14,duration:beat/2,yoyo:true,repeat:22,ease:'power1.inOut'},0);
+  tl.to('#head',{y:-18,rotation:-3,transformOrigin:'50% 100%',duration:beat/2,yoyo:true,repeat:22,ease:'power1.inOut'},0);
+  tl.to('.m',{x:'random(-18,18)',y:'-=20',duration:beat/2,yoyo:true,repeat:22,stagger:.03,ease:'power1.inOut'},0);
+  tl.to('.gs',{x:-1200,duration:'random(.6,1.1)',repeat:12,ease:'none',stagger:{each:.03,from:'random'}},0);
+  tl.to('#hills',{x:-600,duration:12,ease:'none'},0);
+  tl.to('.d',{opacity:.7,y:'-=60',x:'-=120',duration:.9,repeat:10,stagger:.05,ease:'power1.out'},0.5);
+  tl.to('svg',{rotation:-4,transformOrigin:'50% 80%',duration:2,yoyo:true,repeat:1,ease:'sine.inOut'},5.0);
+  tl.to('#vig',{opacity:.3,duration:1.5},10.0);
+  say(tl,'.caption','riding; the gallop is on the beat',0.6,3); say(tl,'.caption','the mane in your face, the ground a blur',3.8,3); say(tl,'.caption','you turn her toward the sun and let her run',7.4,3.4);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>

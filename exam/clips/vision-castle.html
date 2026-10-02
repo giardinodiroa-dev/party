@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../static/stage.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script></head><body><div class="stage">
+<svg viewBox="0 0 960 540"><defs><filter id="cl"><feTurbulence type="fractalNoise" baseFrequency=".006" numOctaves="4" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .92  0 0 0 0 .95  0 0 0 0 1  0 0 0 1.6 -.55"/><feGaussianBlur stdDeviation="2"/></filter>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a3a"/><stop offset=".55" stop-color="#2b4a8a"/><stop offset="1" stop-color="#c9a0d8"/></linearGradient>
+<radialGradient id="sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6d0"/><stop offset=".3" stop-color="#ffd27a" stop-opacity=".9"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient></defs>
+<rect width="960" height="540" fill="url(#sky)"/>
+<g id="castle" transform="translate(480 300) scale(.25)" opacity=".0">
+  <rect x="-300" y="-120" width="600" height="300" fill="#dfe4ec"/><rect x="-360" y="-220" width="110" height="400" fill="#eef1f6"/><rect x="250" y="-220" width="110" height="400" fill="#eef1f6"/>
+  <polygon points="-360,-220 -305,-330 -250,-220" fill="#7a5cff"/><polygon points="250,-220 305,-330 360,-220" fill="#7a5cff"/><rect x="-60" y="-260" width="120" height="140" fill="#eef1f6"/><polygon points="-60,-260 0,-370 60,-260" fill="#7a5cff"/>
+  <path d="M0 -370 L0 -430 L50 -412 L0 -396Z" fill="#ff7eb6"/>
+  <path id="gateL" d="M-70 180 L-70 20 Q-70 -40 0 -40 L0 180Z" fill="#3a2a1a"/><path id="gateR" d="M70 180 L70 20 Q70 -40 0 -40 L0 180Z" fill="#3a2a1a"/>
+  <path id="gatelight" d="M-70 180 L-70 20 Q-70 -40 0 -40 Q70 -40 70 20 L70 180Z" fill="#ffe9a8" opacity="0"/>
+  <rect x="-240" y="-40" width="30" height="60" rx="15" fill="#ffe9a8" opacity=".7"/>
+<rect x="-170" y="-40" width="30" height="60" rx="15" fill="#ffe9a8" opacity=".7"/>
+<rect x="-100" y="-40" width="30" height="60" rx="15" fill="#ffe9a8" opacity=".7"/>
+<rect x="100" y="-40" width="30" height="60" rx="15" fill="#ffe9a8" opacity=".7"/>
+<rect x="170" y="-40" width="30" height="60" rx="15" fill="#ffe9a8" opacity=".7"/>
+<rect x="240" y="-40" width="30" height="60" rx="15" fill="#ffe9a8" opacity=".7"/>
+</g>
+<g id="cl1"><rect x="-960" y="330" width="2880" height="400" filter="url(#cl)"/></g>
+<g id="cl2"><rect x="-960" y="380" width="2880" height="400" filter="url(#cl)" opacity=".9"/></g>
+<rect id="gold" width="960" height="540" fill="#ffe9a8" opacity="0"/></svg>
+<script>window.scene=function(tl){
+  gsap.set('#castle',{transformOrigin:'50% 50%'});
+  tl.to('#castle',{opacity:1,scale:.6,y:260,duration:5,ease:'power1.in'},0);
+  tl.to('#cl1',{x:-400,duration:9,ease:'none'},0); tl.to('#cl2',{x:-700,y:40,duration:9,ease:'none'},0);
+  tl.to('#castle',{scale:1.4,y:240,duration:4,ease:'power2.in'},5.0);
+  tl.to('#gateL',{x:-70,duration:1.4,ease:'power2.inOut'},7.6); tl.to('#gateR',{x:70,duration:1.4,ease:'power2.inOut'},7.6); tl.to('#gatelight',{opacity:1,duration:1.2},7.8);
+  tl.to('#castle',{scale:5,y:900,duration:2.4,ease:'power3.in'},9.0);
+  tl.to('#gold',{opacity:1,duration:1.2},10.4); tl.to('#gold',{opacity:0,duration:1.4},12.0);
+  say(tl,'.caption','a castle rises out of the clouds as you come nearer',0.6,3.4); say(tl,'.caption','the gate opens for you',7.6,2); say(tl,'.caption','you walk in; the hall is gold',9.8,2.6);
+}</script>
+<div class="caption"></div></div><script src="../static/stage.js"></script></body></html>
