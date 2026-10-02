@@ -61,13 +61,46 @@ void main(){
 COMPOSE = """#version 330 core
 in vec2 uv; out vec4 frag;
 uniform sampler2D edges; uniform sampler2D halo;
-uniform vec3 coreColor; uniform vec3 haloColor; uniform float coreAmt; uniform float haloAmt;
+uniform float time; uniform float hue; uniform float loud; uniform float bass; uniform float flash;
+uniform float coreAmt; uniform float haloAmt; uniform float astralAmt; uniform vec2 res;
+float hash21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vnoise(vec2 p){
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  float a = hash21(i), b = hash21(i + vec2(1, 0)), c = hash21(i + vec2(0, 1)), d = hash21(i + vec2(1, 1));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+// mother-of-pearl: a pastel cosine palette pulled toward white
+vec3 pearl(float t){ vec3 c = 0.72 + 0.28 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67))); return mix(c, vec3(1.0), 0.22); }
 void main(){
-  float e = texture(edges, uv).r * coreAmt;
-  float h = texture(halo, uv).r * haloAmt;
-  float a = clamp(e + h, 0.0, 0.9);
-  vec3 rgb = (coreColor * e + haloColor * h) / max(e + h, 1e-4);
-  frag = vec4(rgb * a, a);           // premultiplied, as X ARGB visuals expect
+  float e = texture(edges, uv).r;
+  float h = texture(halo, uv).r;
+  vec2 px = uv * res;
+  // the colour field: hue drifts across the screen and through time — never one colour
+  float t = hue / 360.0 + 0.12 * sin(uv.x * 4.1 + time * 0.21) + 0.12 * sin(uv.y * 3.3 - time * 0.17)
+          + 0.10 * (vnoise(uv * 3.0 + time * 0.05) - 0.5);
+  vec3 ringC = pearl(t);
+  vec3 coreC = mix(pearl(t + 0.08), vec3(1.0), 0.6);
+  float ringA = h * (1.0 - e) * haloAmt;        // beside the strokes, never on them
+  float coreA = e * coreAmt;                     // only when he wants bold
+  // astral: twinkling stars, a slow nebula, orbs born on the beat — dimmed over content
+  float content = smoothstep(0.02, 0.25, h);
+  vec2 cell = floor(px / 28.0);
+  vec2 cp = (cell + vec2(hash21(cell), hash21(cell + 7.0))) * 28.0;
+  float tw = pow(0.5 + 0.5 * sin(time * (1.0 + hash21(cell + 3.0) * 2.0) + hash21(cell) * 6.28), 6.0);
+  float star = smoothstep(2.2, 0.0, length(px - cp)) * tw * (0.35 + 0.65 * flash) * step(0.55, hash21(cell + 11.0));
+  float neb = vnoise(uv * 2.2 + vec2(time * 0.03, -time * 0.02)) * vnoise(uv * 5.0 - time * 0.04);
+  neb = smoothstep(0.25, 0.75, neb) * (0.05 + 0.10 * loud);
+  vec2 oc = floor(px / 180.0);
+  vec2 op = (oc + vec2(hash21(oc + 5.0), hash21(oc + 9.0))) * 180.0
+          + vec2(sin(time * 0.3 + hash21(oc) * 6.0), cos(time * 0.27 + hash21(oc + 1.0) * 6.0)) * 22.0;
+  float orad = 14.0 + 40.0 * hash21(oc + 2.0) * (0.5 + bass);
+  float orb = smoothstep(orad, orad * 0.2, length(px - op)) * flash * 0.35 * step(0.5, hash21(oc + 13.0));
+  float astral = (star * 0.9 + neb + orb) * astralAmt * (1.0 - content * 0.85);
+  vec3 astralC = pearl(t + 0.3 + 0.2 * hash21(cell));
+  float total = coreA + ringA + astral;
+  float a = clamp(total, 0.0, 0.9);
+  vec3 rgb = (coreC * coreA + ringC * ringA + astralC * astral) / max(total, 1e-4);
+  frag = vec4(rgb * a, a);                       // premultiplied, as X ARGB visuals expect
 }
 """
 BLIT = """#version 330 core
@@ -83,6 +116,10 @@ class AuraParams:
     bass: float = 0.0
     flash: float = 0.0
     sensitivity: float = 1.0
+    width: float = 2.0        # halo width, 0.5..6
+    bold: bool = False        # paint the stroke pixels themselves (makes things bolder)
+    astral: bool = True
+    time: float = 0.0
 
     def intensity(self) -> float:
         base = 0.12 + 0.5 * self.loud + 0.7 * self.flash
@@ -174,18 +211,22 @@ class AuraPipeline:
         self.edges_fbo.bind()
         self._draw("edges", [self.screen_tex, prev], (W, H),
                    {"screen": 0, "prevGlow": 1, "texel": (1.0 / W, 1.0 / H), "t0": 0.07, "t1": 0.32})
-        radius = 1.0 + 2.6 * params.bass
-        self.blur_fbo[0].bind()
-        self._draw("blur", [self.edges_fbo.texture()], (hw, hh), {"src": 0, "dir": (radius / hw, 0.0)})
-        self.blur_fbo[1].bind()
-        self._draw("blur", [self.blur_fbo[0].texture()], (hw, hh), {"src": 0, "dir": (0.0, radius / hh)})
+        radius = max(0.3, params.width) * (0.6 + 0.9 * params.bass)
+        passes = 2 if params.width > 2.2 else 1          # wide halos: blur twice, still cheap at half res
+        src = self.edges_fbo.texture()
+        for _ in range(passes):
+            self.blur_fbo[0].bind()
+            self._draw("blur", [src], (hw, hh), {"src": 0, "dir": (radius / hw, 0.0)})
+            self.blur_fbo[1].bind()
+            self._draw("blur", [self.blur_fbo[0].texture()], (hw, hh), {"src": 0, "dir": (0.0, radius / hh)})
+            src = self.blur_fbo[1].texture()
         amt = params.intensity()
         self.glow_fbo[self.cur].bind()
         self._draw("compose", [self.edges_fbo.texture(), self.blur_fbo[1].texture()], (W, H),
-                   {"edges": 0, "halo": 1,
-                    "coreColor": tuple(0.45 * c + 0.55 for c in _rgb(params.hue, 0.9, 1.0)),
-                    "haloColor": _rgb(params.hue + 30.0, 0.95, 1.0),
-                    "coreAmt": amt, "haloAmt": amt * 1.5})
+                   {"edges": 0, "halo": 1, "time": float(params.time), "hue": float(params.hue),
+                    "loud": float(params.loud), "bass": float(params.bass), "flash": float(params.flash),
+                    "coreAmt": amt * 0.8 if params.bold else 0.0, "haloAmt": amt * 2.6,
+                    "astralAmt": 1.0 if params.astral else 0.0, "res": (float(W), float(H))})
         glow = self.glow_fbo[self.cur].texture()
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, target_fbo)
         gl.glClearColor(0, 0, 0, 0)
@@ -287,7 +328,8 @@ def render_png(src_png: str, out_png: str, params: AuraParams | None = None, fra
     out = QOpenGLFramebufferObject(QSize(w, h), QOpenGLFramebufferObject.Attachment.NoAttachment,
                                    gl.GL_TEXTURE_2D, gl.GL_RGBA8)
     p = params or AuraParams(hue=190.0, loud=0.7, bass=0.6, flash=0.8)
-    for _ in range(frames):                     # a few frames so the un-blend path runs too
+    for i in range(frames):                     # a few frames so the un-blend path runs too
+        p.time = 1.7 + 0.033 * i
         pipe.upload(frame)
         pipe.render(p, out.handle(), (w, h))
     glow = out.toImage(False)

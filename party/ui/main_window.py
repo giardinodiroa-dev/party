@@ -112,6 +112,12 @@ class MainWindow(QWidget):
         self.fullscreen_wanted = False
         self.aura: AuraWindow | None = None
         self.aura_wanted = False
+        self.aura_width = 2.0
+        self.aura_bold = False
+        self.aura_astral = True
+        self._t0 = time.monotonic()
+        self._drag_width = False
+        self._width_rect = QRectF()
 
         self.scene = Scene()
         self.levels = Levels()
@@ -146,6 +152,9 @@ class MainWindow(QWidget):
         self.hotreload_on = bool(state.get("hotreload", True))
         self.fullscreen_wanted = bool(state.get("fullscreen", False))
         self.aura_wanted = bool(state.get("aura", False))
+        self.aura_width = min(6.0, max(0.5, float(state.get("aura_width", 2.0))))
+        self.aura_bold = bool(state.get("aura_bold", False))
+        self.aura_astral = bool(state.get("aura_astral", True))
         wanted = state.get("source")
         names = [n for n, _ in list_sources()]
         self.source = wanted if wanted in names else None      # None = AUTO: follow default output
@@ -164,7 +173,12 @@ class MainWindow(QWidget):
 
     def aura_params(self) -> AuraParams:
         lv = self.levels
-        return AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity)
+        return AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity,
+                          self.aura_width, self.aura_bold, self.aura_astral, time.monotonic() - self._t0)
+
+    def nudge_width(self, d: float) -> None:
+        self.aura_width = min(6.0, max(0.5, self.aura_width + d))
+        self._changed()
 
     def toggle_aura(self) -> None:
         """AURA: every line, border and glyph on the whole screen glows on the beat."""
@@ -187,6 +201,8 @@ class MainWindow(QWidget):
         return {"mode": self.mode, "sensitivity": round(self.sensitivity, 3),
                 "source": self.source, "fullscreen": self.isFullScreen(),
                 "aura": bool(self.aura is not None and self.aura.isVisible()),
+                "aura_width": round(self.aura_width, 2), "aura_bold": self.aura_bold,
+                "aura_astral": self.aura_astral,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
 
@@ -253,6 +269,12 @@ class MainWindow(QWidget):
             self.toggle_fullscreen()
         elif action == "aura":
             self.toggle_aura()
+        elif action == "bold":
+            self.aura_bold = not self.aura_bold
+            self._changed()
+        elif action == "astral":
+            self.aura_astral = not self.aura_astral
+            self._changed()
         elif action == "source":
             self.pick_source()
         elif action == "hotreload":
@@ -271,7 +293,7 @@ class MainWindow(QWidget):
         self.idle.start()
 
     def _hide_chrome(self) -> None:
-        if self._drag_slider or self._bar_rect.contains(QPointF(self.mapFromGlobal(QCursor.pos()))):
+        if self._drag_slider or self._drag_width or self._bar_rect.contains(QPointF(self.mapFromGlobal(QCursor.pos()))):
             self.idle.start()
             return
         self.chrome_target = 0.0
@@ -339,7 +361,8 @@ class MainWindow(QWidget):
         p.fillRect(bar, theme.alpha(theme.VOID, 0.9))
         p.fillRect(QRectF(bar.left(), bar.top(), bar.width(), 1), QColor(theme.HAIRLINE))
         chips = [("mode:PULSE", "pulse", "1"), ("mode:BARS", "bars", "2"), ("mode:ORBS", "orbs", "3"),
-                 ("aura", "aura", "4"), ("fullscreen", "full", "F"), ("source", "source", "S"),
+                 ("aura", "aura", "4"), ("bold", "bold", "B"), ("astral", "astral", "A"),
+                 ("fullscreen", "full", "F"), ("source", "source", "S"),
                  ("pause", "play" if self.paused else "pause", "SPC"),
                  ("hotreload", "reload", "R")]
         x = bar.left() + 16
@@ -347,6 +370,8 @@ class MainWindow(QWidget):
             live = ((action.startswith("mode:") and action[5:] == self.mode)
                     or (action == "hotreload" and self.hotreload_on)
                     or (action == "aura" and self.aura is not None and self.aura.isVisible())
+                    or (action == "bold" and self.aura_bold)
+                    or (action == "astral" and self.aura_astral)
                     or (action == "pause" and self.paused))
             box = QRectF(x, bar.top() + 8, 40, 40)
             if live:
@@ -358,19 +383,26 @@ class MainWindow(QWidget):
                      True, 1.2, 6.5, Qt.AlignmentFlag.AlignCenter)
             self._hits.append((box, action))
             x += 48
-        # sensitivity slider: the rest of the bar
-        track = QRectF(x + 24, bar.center().y() - 1, max(60.0, bar.right() - x - 40), 2)
-        self._slider_rect = QRectF(track.left() - 8, bar.top(), track.width() + 16, bar.height())
+        # two sliders share the rest of the bar: sensitivity, aura width
+        avail = max(140.0, bar.right() - x - 40)
+        half = (avail - 24) / 2
+        self._slider_rect = self._slider(p, bar, QRectF(x + 24, bar.center().y() - 1, half, 2),
+                                         (self.sensitivity - SENS_MIN) / (SENS_MAX - SENS_MIN),
+                                         f"SENSITIVITY {self.sensitivity:.1f}×  ↑↓")
+        self._width_rect = self._slider(p, bar, QRectF(x + 24 + half + 24, bar.center().y() - 1, half, 2),
+                                        (self.aura_width - 0.5) / 5.5,
+                                        f"AURA WIDTH {self.aura_width:.1f}  [ ]")
+
+    def _slider(self, p: QPainter, bar: QRectF, track: QRectF, t: float, label: str) -> QRectF:
         p.fillRect(track, QColor(theme.FAINT))
-        t = (self.sensitivity - SENS_MIN) / (SENS_MAX - SENS_MIN)
-        kx = track.left() + track.width() * t
+        kx = track.left() + track.width() * max(0.0, min(1.0, t))
         p.fillRect(QRectF(track.left(), track.top(), kx - track.left(), 2), QColor(theme.GOOD))
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QColor(theme.BONE))
         p.drawEllipse(QPointF(kx, track.center().y()), 5, 5)
-        fit_text(p, QRectF(track.left(), bar.top() + 6, track.width(), 12),
-                 f"SENSITIVITY {self.sensitivity:.1f}×  ↑↓", 7, theme.DIM, True, 1.6, 6.5,
-                 Qt.AlignmentFlag.AlignCenter)
+        fit_text(p, QRectF(track.left(), bar.top() + 6, track.width(), 12), label, 7, theme.DIM,
+                 True, 1.6, 6.5, Qt.AlignmentFlag.AlignCenter)
+        return QRectF(track.left() - 8, bar.top(), track.width() + 16, bar.height())
 
     def _glyph(self, p: QPainter, box: QRectF, kind: str, color: str) -> None:
         """1.8px line icons drawn in code (no icon fonts, no emoji in chrome)."""
@@ -397,6 +429,15 @@ class MainWindow(QWidget):
             pen.setColor(theme.alpha(color, 0.45))
             p.setPen(pen)
             p.drawRoundedRect(QRectF(c.x() - r, c.y() - r * 0.85, r * 2, r * 1.7), 4, 4)
+        elif kind == "bold":
+            pen.setWidthF(3.6)
+            p.setPen(pen)
+            p.drawLine(QPointF(c.x() - r * 0.7, c.y()), QPointF(c.x() + r * 0.7, c.y()))
+        elif kind == "astral":
+            for dx, dy, s_ in ((0.0, 0.0, 1.0), (-0.65, -0.55, 0.45), (0.6, 0.5, 0.35), (0.55, -0.6, 0.3)):
+                cx, cy, rr = c.x() + dx * r, c.y() + dy * r, r * s_ * 0.9
+                p.drawLine(QPointF(cx - rr, cy), QPointF(cx + rr, cy))
+                p.drawLine(QPointF(cx, cy - rr), QPointF(cx, cy + rr))
         elif kind == "full":
             for sx in (-1, 1):
                 for sy in (-1, 1):
@@ -466,6 +507,10 @@ class MainWindow(QWidget):
                 self._drag_slider = True
                 self._slide(pos.x())
                 return
+            if self._width_rect.contains(pos):
+                self._drag_width = True
+                self._slide_width(pos.x())
+                return
         if pos.y() < TITLE_H and not self.isFullScreen():
             self.windowHandle().startSystemMove()
 
@@ -478,9 +523,19 @@ class MainWindow(QWidget):
         self._show_chrome()
         if self._drag_slider:
             self._slide(e.position().x())
+        if self._drag_width:
+            self._slide_width(e.position().x())
 
     def mouseReleaseEvent(self, _e: QMouseEvent) -> None:  # noqa: N802
         self._drag_slider = False
+        self._drag_width = False
+
+    def _slide_width(self, x: float) -> None:
+        track_l = self._width_rect.left() + 8
+        track_w = max(1.0, self._width_rect.width() - 16)
+        t = min(1.0, max(0.0, (x - track_l) / track_w))
+        self.aura_width = 0.5 + t * 5.5
+        self._changed()
 
     def _slide(self, x: float) -> None:
         track_l = self._slider_rect.left() + 8
@@ -508,6 +563,14 @@ class MainWindow(QWidget):
             self.set_mode(MODES[k - Qt.Key.Key_1])
         elif k == Qt.Key.Key_4:
             self.toggle_aura()
+        elif k == Qt.Key.Key_B:
+            self._act("bold")
+        elif k == Qt.Key.Key_A:
+            self._act("astral")
+        elif k == Qt.Key.Key_BracketLeft:
+            self.nudge_width(-0.25)
+        elif k == Qt.Key.Key_BracketRight:
+            self.nudge_width(0.25)
         elif k == Qt.Key.Key_M:
             self.next_mode()
         elif k == Qt.Key.Key_S:

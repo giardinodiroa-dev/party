@@ -14,3 +14,9 @@ ethereal onbeat glow as an additional mode" … "if you can do text as well it w
 crazy as long as the pc is usable go".
 Accepted route: screen-space overlay + GL shader inside Party (AURA, key 4), click-through,
 fps cap with step-down, text included through edge detection.
+
+His words (2026-10-02, third ask): "graduate the width of the glow because it is making some
+things unreadable… not make things bolder unless I want to… add some sfx to the screen like
+lights and astral elements, mother pearl type colors… not just one color but varied gradients…
+trippy in a holy way". Built: width slider/keys, ring glow off the strokes, bold toggle (off),
+pearl palette over a drifting hue field, stars/nebula/beat orbs dimmed over content.
