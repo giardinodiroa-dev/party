@@ -45,3 +45,6 @@ Offline proof: `python3 -c "from party.ui.aura import render_png; render_png('in
 - Story art: `art/<actor>.jpg` paintings, generated once (Pollinations, black-keyed to light)
   and cached. Drop your own `art/<actor>.png` or `art/<actor>-2.png` to override; the line-art
   sprite is only the stand-in while a painting is missing.
+
+Favourite phrases: put `*` at the start of a line in `brainwash/phrases.txt` and it shows four
+times as often. Code never rewrites that file.

@@ -1,7 +1,8 @@
 """Brainwash: his own phrases and pictures, surfacing faintly in the void.
 
 `~/party/brainwash/phrases.txt` — one phrase per line (a starter set is written on
-first run). `~/party/brainwash/images/` — any png/jpg he drops there. Pure Python:
+first run; after that the file is his and code never rewrites it). `*` in front of a
+line makes it a favourite, shown four times as often. `~/party/brainwash/images/` — any png/jpg he drops there. Pure Python:
 the window turns `Item`s into textured quads.
 """
 from __future__ import annotations
@@ -49,7 +50,18 @@ class Brainwash:
         f = self.root / "phrases.txt"
         if not f.exists():
             f.write_text("\n".join(DEFAULT_PHRASES) + "\n")
-        self.phrases = [ln.strip() for ln in f.read_text().splitlines() if ln.strip()] or DEFAULT_PHRASES
+        # His file is never rewritten by code. A line starting with "*" is a favourite: it is
+        # drawn four times as often. Repeating a line weights it too.
+        self.phrases = []
+        for ln in f.read_text().splitlines():
+            ln = ln.strip()
+            if not ln:
+                continue
+            if ln.startswith("*"):
+                self.phrases += [ln.lstrip("* ").strip()] * 4
+            else:
+                self.phrases.append(ln)
+        self.phrases = self.phrases or list(DEFAULT_PHRASES)
         self.images = sorted(str(p) for p in (self.root / "images").iterdir()
                              if p.suffix.lower() in IMAGE_SUFFIXES)
 
