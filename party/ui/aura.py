@@ -26,10 +26,12 @@ PHRASE_ANIMS = ["FADE", "PULSE", "RISE", "TYPE", "FLASH"]
 PHRASE_FONT_NAMES = ["MONO", "SERIF", "SANS", "HANDSCRIPT"]
 
 
-def phrase_tint(mode: int, hue: float, t: float) -> tuple[float, float, float]:
-    """The colour worlds, as one tint for a text quad (the shader palettes, in Python)."""
+def phrase_tint(mode: int, hue: float, t: float, custom: tuple[float, float] = (200.0, 0.8)) -> tuple[float, float, float]:
+    """The colour worlds, as one tint for a text quad (the shader palettes, in Python). -2 = his own hue/light."""
     import math
-    if mode == 1:
+    if mode == -2:
+        c = QColor.fromHslF((custom[0] % 360) / 360, 0.9, max(0.05, min(0.98, custom[1])))
+    elif mode == 1:
         c = QColor.fromHsvF((hue % 360) / 360, 0.75, 1.0)
     elif mode == 2:
         c = QColor.fromHsvF((t * 0.08) % 1.0, 0.85, 1.0)
@@ -103,7 +105,7 @@ in vec2 uv; out vec4 frag;
 uniform sampler2D edges; uniform sampler2D halo; uniform sampler2D clean; uniform sampler2D spectrum;
 uniform float time; uniform float hue; uniform float loud; uniform float bass; uniform float flash;
 uniform float coreAmt; uniform float haloAmt; uniform float astralAmt; uniform float ghostAmt;
-uniform int colorMode; uniform int border; uniform int waveStyle; uniform int waveShape; uniform int edgeMask; uniform int barColor; uniform vec2 lens; uniform float lensOn;
+uniform int colorMode; uniform int border; uniform int waveStyle; uniform int waveShape; uniform int edgeMask; uniform int barColor; uniform float barHeight; uniform float barFill; uniform vec2 lens; uniform float lensOn;
 uniform float bright;
 uniform vec2 res;
 """ + NOISE + """
@@ -206,7 +208,7 @@ void main(){
   vec2 q = vec2(fbm(uv * 2.0 + time * 0.02), fbm(uv * 2.0 - time * 0.015));
   float n = fbm(uv * 3.0 + q * 1.5 + time * 0.01);
   float neb = smoothstep(0.35, 0.8, n) * (0.10 + 0.14 * loud) * ghostAmt;
-  float ghost = 0.0;
+  float ghost = 0.0, eyes = 0.0;
   for (int i = 0; i < 6; i++) {
     float fi = float(i); float ph = hash21(vec2(fi, 3.0)) * 6.28;
     vec2 c = vec2(0.08 + 0.84 * fract(hash21(vec2(fi, 1.0)) + time * 0.012 * (0.5 + hash21(vec2(fi, 2.0)))), 0.58 + 0.10 * sin(time * 0.7 + ph));
@@ -215,9 +217,13 @@ void main(){
     float body = exp(-dot(d * vec2(9.0, 4.0), d * vec2(9.0, 4.0)));
     vec2 dh = d - vec2(0.0, -0.17);
     float head = exp(-dot(dh * 14.0, dh * 14.0));
-    ghost += (body * 0.8 + head) * (0.6 + 0.4 * sin(time * 1.3 + ph));
+    float vis = 0.6 + 0.4 * sin(time * 1.3 + ph);
+    ghost += (body * 0.8 + head) * vis;
+    vec2 e1 = dh - vec2(-0.022, -0.01), e2 = dh - vec2(0.022, -0.01);        // two dark eyes
+    eyes += (exp(-dot(e1 * 90.0, e1 * 90.0)) + exp(-dot(e2 * 90.0, e2 * 90.0))) * vis;
   }
-  ghost *= ghostAmt * (0.05 + 0.08 * loud + 0.10 * flash);
+  ghost *= ghostAmt * (0.16 + 0.22 * loud + 0.28 * flash);
+  eyes *= ghostAmt * (0.5 + 0.4 * loud) * (1.0 - content);
   float sky = ((star * 0.9 + orb) * astralAmt + neb + ghost) * (1.0 - content * 0.85);
   vec3 skyC = palette(colorMode, t + 0.3 + 0.25 * n, n);
   // ---- the sound climbing in from the four borders ----
@@ -235,9 +241,9 @@ void main(){
       float slot = along * 64.0;
       sp = texture(spectrum, vec2((floor(slot) + 0.5) / 64.0, 0.5)).r;       // linear filter interpolates the 32 bins
       float f = fract(slot);
-      gapMask = step(0.30, f) * step(f, 0.70);                                // 40% of the slot is bar, the rest is gap
+      gapMask = step(0.5 - barFill * 0.5, f) * step(f, 0.5 + barFill * 0.5);   // his slimness
     }
-    float hmax = res.y * 0.10 * (0.5 + 0.5 * loud);
+    float hmax = res.y * barHeight * (0.5 + 0.5 * loud);
     float height = sp * hmax;
     float inside = 1.0 - clamp(dist / max(height, 1.0), 0.0, 1.0);           // 1 at the border, 0 at the crest
     if (waveStyle == 1) {                                                      // ELECTRIC
@@ -273,8 +279,9 @@ void main(){
   float total = (coreA + ringA + sky + wave) * bright;
   float a = clamp(total, 0.0, 0.92);
   vec3 rgb = (coreC * coreA + ringC * ringA + skyC * sky + waveC * wave) / max(total, 1e-4);
-  if (lensOn > 0.5) { vec4 under = frag; float add = min(a, 1.0 - under.a); frag = vec4(under.rgb + rgb * add, under.a + add); return; }
-  frag = vec4(rgb * a, a);
+  float aDark = clamp(a + eyes * 0.85, 0.0, 0.95);                         // eyes add cover, not light
+  if (lensOn > 0.5) { vec4 under = frag; float add = min(aDark, 1.0 - under.a); frag = vec4(under.rgb + rgb * a * (add / max(aDark, 1e-4)), under.a + add); return; }
+  frag = vec4(rgb * a, aDark);
 }
 """
 SPRITE_VERT = """#version 330 core
@@ -315,6 +322,8 @@ class AuraParams:
     waves: int = 1                      # index into WAVE_STYLES (ELECTRIC by default: bars show)
     edges: int = 1                      # bit mask: 1 bottom, 2 top, 4 left, 8 right
     bar_color: int = 2                  # index into COLOR_MODES, or -1 = the style's own colour
+    bar_height: float = 0.10            # fraction of screen height
+    bar_fill: float = 0.4               # fraction of each slot that is bar
     wave_shape: int = 1                 # 0 wave, 1 bars
     bright: float = 1.0                 # 0.2..2.5
     lens: bool = False                  # black-hole cursor
@@ -427,6 +436,7 @@ class AuraPipeline:
                     "astralAmt": 1.0 if p.astral else 0.0, "ghostAmt": 1.0 if p.ghost else 0.0,
                     "colorMode": int(p.color_mode), "border": int(p.border), "waveStyle": int(p.waves),
                     "waveShape": int(p.wave_shape), "bright": float(p.bright), "edgeMask": int(p.edges), "barColor": int(p.bar_color),
+                    "barHeight": float(p.bar_height), "barFill": float(p.bar_fill),
                     "lens": (float(p.cursor[0]), float(p.cursor[1])), "lensOn": 1.0 if p.lens else 0.0,
                     "res": (float(W), float(H))})
         if p.sprites:
@@ -469,7 +479,10 @@ class AuraWindow(QOpenGLWindow):
         self.art = None
         self.ledaie = None
         self.flags = {"stories": True, "brainwash": True, "story_gap": 20.0, "phrase_gap": 5.0,
-                      "phrase_font": "MONO", "phrase_color": 0, "phrase_size": 1, "phrase_anim": 0}
+                      "phrase_font": "MONO", "phrase_color": 0, "phrase_size": 1, "phrase_anim": 0,
+                      "phrase_custom": (200.0, 0.8), "ledaie": True, "ledaie_font": "MONO", "ledaie_color": 5,
+                      "ledaie_custom": (45.0, 0.8), "caption_font": "MONO", "caption_color": 0,
+                      "caption_custom": (200.0, 0.85), "constellations": True}
         self.timer = QTimer(self); self.timer.timeout.connect(self.update)
         self._slow = 0
         self._t0 = time.monotonic()
@@ -496,6 +509,8 @@ class AuraWindow(QOpenGLWindow):
             self.art = Art(self.root / "art")
             from ..ledaie import LedaieWords
             self.ledaie = LedaieWords()
+            from ..stories import Constellations
+            self.constellations = Constellations()
         except Exception as exc:                 # noqa: BLE001 — say it in the UI, never hang
             self.error = f"aura: {exc}"
             self.timer.stop()
@@ -507,15 +522,28 @@ class AuraWindow(QOpenGLWindow):
         self.brainwash.gap = float(self.flags["phrase_gap"])
         if self.ledaie is not None:
             self.ledaie.gap = float(self.flags["story_gap"]) * 0.8
-        if self.flags["stories"] and self.ledaie is not None:
+        cap_tint = phrase_tint(int(self.flags["caption_color"]), p.hue, t, tuple(self.flags["caption_custom"]))
+        cap_font = str(self.flags["caption_font"])
+        led_tint = phrase_tint(int(self.flags["ledaie_color"]), p.hue, t, tuple(self.flags["ledaie_custom"]))
+        led_font = str(self.flags["ledaie_font"])
+        if self.flags["stories"] and self.flags["constellations"] and getattr(self, "constellations", None) is not None:
+            self.constellations.gap = float(self.flags["story_gap"]) * 1.5
+            sky = self.constellations.frame(t)
+            if sky is not None:
+                ctex, cw, ch = self.textures.constellation(sky.index)
+                k = (0.42 * H) / ch; cw, ch = cw * k * sky.scale, ch * k * sky.scale
+                out.append((ctex, sky.x - cw / W / 2, sky.y - ch / H / 2, cw / W, ch / H, sky.alpha, (0.9, 0.93, 1.0)))
+                lt, lw, lh = self.textures.text(sky.caption, 20, cap_font)
+                out.append((lt, sky.x - lw / W / 2, sky.y + ch / H / 2 + 0.01, lw / W, lh / H, sky.caption_alpha, cap_tint))
+        if self.flags["stories"] and self.flags["ledaie"] and self.ledaie is not None:
             show = self.ledaie.frame(t)
             if show is not None:
                 hx, hw_, hh_ = self.textures.handscript(show.word, 96 if show.kind == "symbol" else 64)
                 sw, sh = hw_ * show.scale / W, hh_ * show.scale / H
-                out.append((hx, show.x - sw / 2, show.y - sh / 2, sw, sh, show.alpha, (0.98, 0.93, 0.8)))
+                out.append((hx, show.x - sw / 2, show.y - sh / 2, sw, sh, show.alpha, led_tint))
                 if show.kind == "word":
-                    lt, lw, lh = self.textures.text(f"{show.word}  ·  {show.meaning}", 22)
-                    out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * 0.8, (0.94, 0.91, 0.85)))
+                    lt, lw, lh = self.textures.text(f"{show.word}  ·  {show.meaning}", 22, led_font)
+                    out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * 0.8, led_tint))
         if self.flags["stories"]:
             shot = self.stories.frame(t)
             if shot is not None:
@@ -529,8 +557,8 @@ class AuraWindow(QOpenGLWindow):
                 sw, sh = w * shot.scale / W, h * shot.scale / H
                 out.append((tex, shot.x - sw / 2, shot.y - sh / 2, sw, sh, shot.alpha, (0.95, 0.95, 1.0)))
                 if shot.caption_alpha > 0.01:
-                    ctex, cw, ch = self.textures.text(shot.caption, 20)
-                    out.append((ctex, 0.5 - cw / W / 2, 0.86, cw / W, ch / H, shot.caption_alpha, (0.94, 0.91, 0.85)))
+                    ctex, cw, ch = self.textures.text(shot.caption, 20, cap_font)
+                    out.append((ctex, 0.5 - cw / W / 2, 0.86, cw / W, ch / H, shot.caption_alpha, cap_tint))
         if self.flags["brainwash"]:
             for item in self.brainwash.frame(t, p.flash):
                 if item.kind == "text":
@@ -547,7 +575,7 @@ class AuraWindow(QOpenGLWindow):
                         item.y = 1.05 - (1.05 - item.y) * 1.0 - 0.35 * ((t - self.brainwash.text[1]) / self.brainwash.text[2])
                     elif anim == "FLASH":
                         item.alpha = item.alpha * 0.5 + 0.45 * p.flash
-                    tint = phrase_tint(int(self.flags["phrase_color"]), p.hue, t)
+                    tint = phrase_tint(int(self.flags["phrase_color"]), p.hue, t, tuple(self.flags["phrase_custom"]))
                     sw, sh = w * item.scale / W, h * item.scale / H
                     out.append((tex, item.x - sw / 2, item.y - sh / 2, sw, sh, item.alpha, tint))
                     continue

@@ -37,6 +37,16 @@ PROMPTS = {
     "dragon": "a serpentine dragon of starlight swimming through space, golden eyes",
     "unicorn": "a unicorn galloping through space leaving a soft rainbow trail",
     "fish": "a luminous goldfish swimming through starlight with a tiny crown",
+    "sun": "a radiant sun with soft flares, warm gold",
+    "earth": "planet earth from space, blue oceans, city lights on the night side",
+    "galaxy": "a spiral galaxy seen at a tilt, luminous arms",
+    "meteor": "a meteor burning bright with a long fiery trail",
+    "phoenix": "a phoenix of fire and light rising with spread wings",
+    "owl": "a wise owl made of starlight perched on nothing, large glowing eyes",
+    "butterfly": "a luminous butterfly with galaxies painted on its wings",
+    "lighthouse": "a small lighthouse floating in space, its beam sweeping the dark",
+    "crown": "a golden crown of light with glowing jewels",
+    "tree": "a glowing tree of life with roots of starlight",
 }
 SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 

@@ -20,10 +20,30 @@
   "aura_barcolor": 2,
   "story_gap": 20.0,
   "phrase_gap": 5.0,
-  "phrase_font": "MONO",
+  "phrase_font": "SANS",
   "phrase_color": 0,
   "phrase_size": 1,
   "phrase_anim": 0,
+  "bar_height": 0.1,
+  "bar_fill": 0.4,
+  "phrase_custom": [
+    200.0,
+    0.8
+  ],
+  "ledaie_on": true,
+  "ledaie_font": "MONO",
+  "ledaie_color": 5,
+  "ledaie_custom": [
+    45.0,
+    0.8
+  ],
+  "caption_font": "MONO",
+  "caption_color": 0,
+  "caption_custom": [
+    200.0,
+    0.85
+  ],
+  "constellations_on": true,
   "profile": "",
   "hotreload": true,
   "geometry": "01d9d0cb00030000000000cb000000680000048a00000297000000cb000000680000048a0000029700000000000000000556000000cb000000680000048a00000297"

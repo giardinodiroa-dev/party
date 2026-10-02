@@ -191,8 +191,85 @@ def draw_sprite(kind: str) -> QImage:
         path = QPainterPath(QPointF(88, 64)); path.lineTo(116, 42); path.lineTo(116, 86); path.closeSubpath(); p.drawPath(path)
         p.setBrush(INK); p.drawEllipse(QPointF(38, 60), 3.5, 3.5)
         p.setBrush(Qt.BrushStyle.NoBrush); p.drawArc(QRectF(44, 48, 24, 32), 240 * 16, 100 * 16)
+    elif kind == "sun":
+        _fill(p); p.drawEllipse(c, 26, 26)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        for i in range(12):
+            a = math.radians(i * 30); p.drawLine(QPointF(64 + math.cos(a) * 34, 64 + math.sin(a) * 34), QPointF(64 + math.cos(a) * (46 if i % 2 else 54), 64 + math.sin(a) * (46 if i % 2 else 54)))
+    elif kind == "earth":
+        _fill(p); p.drawEllipse(c, 40, 40)
+        p.setBrush(theme.alpha(INK, 0.7)); p.setPen(Qt.PenStyle.NoPen)
+        land = QPainterPath(QPointF(40, 40)); land.cubicTo(60, 30, 70, 50, 56, 66); land.cubicTo(44, 72, 34, 56, 40, 40); p.drawPath(land)
+        land2 = QPainterPath(QPointF(74, 70)); land2.cubicTo(96, 64, 94, 92, 76, 96); land2.cubicTo(66, 90, 64, 76, 74, 70); p.drawPath(land2)
+    elif kind == "galaxy":
+        p.setBrush(theme.alpha(INK, 0.6)); p.drawEllipse(c, 10, 6)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        for s0 in (0.0, math.pi):
+            arm = QPainterPath(QPointF(64 + math.cos(s0) * 8, 64 + math.sin(s0) * 5))
+            for k in range(1, 30):
+                a = s0 + k * 0.17; r = 8 + k * 1.8
+                arm.lineTo(QPointF(64 + math.cos(a) * r, 64 + math.sin(a) * r * 0.55))
+            p.drawPath(arm)
+    elif kind == "meteor":
+        _fill(p); p.drawEllipse(QPointF(96, 32), 12, 12)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        for dy, L in ((-4, 60), (4, 84), (12, 50)): p.drawLine(QPointF(88, 36 + dy), QPointF(88 - L * 0.8, 36 + dy + L * 0.6))
+    elif kind == "phoenix":
+        _fill(p)
+        body = QPainterPath(QPointF(64, 100)); body.quadTo(50, 70, 64, 40); body.quadTo(78, 70, 64, 100); p.drawPath(body)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        for sx in (-1, 1):
+            w = QPainterPath(QPointF(64 + sx * 10, 60)); w.quadTo(64 + sx * 50, 20, 64 + sx * 60, 50); w.quadTo(64 + sx * 40, 50, 64 + sx * 12, 76); p.drawPath(w)
+        p.drawEllipse(QPointF(64, 36), 6, 6); p.drawLine(QPointF(64, 100), QPointF(56, 122)); p.drawLine(QPointF(64, 100), QPointF(72, 122))
+    elif kind == "owl":
+        _fill(p); p.drawEllipse(QRectF(34, 36, 60, 76)); p.drawEllipse(QRectF(36, 20, 56, 44))
+        p.setBrush(INK); p.drawEllipse(QPointF(52, 42), 9, 9); p.drawEllipse(QPointF(76, 42), 9, 9)
+        p.setBrush(QColor("#07070a")); p.drawEllipse(QPointF(52, 42), 4, 4); p.drawEllipse(QPointF(76, 42), 4, 4)
+        p.setBrush(Qt.BrushStyle.NoBrush); p.drawLine(QPointF(38, 22), QPointF(30, 8)); p.drawLine(QPointF(90, 22), QPointF(98, 8))
+        p.drawLine(QPointF(60, 52), QPointF(64, 60)); p.drawLine(QPointF(68, 52), QPointF(64, 60))
+    elif kind == "butterfly":
+        _fill(p)
+        for sx in (-1, 1):
+            up = QPainterPath(QPointF(64, 60)); up.cubicTo(64 + sx * 60, 10, 64 + sx * 64, 60, 64, 66); p.drawPath(up)
+            lo = QPainterPath(QPointF(64, 66)); lo.cubicTo(64 + sx * 50, 70, 64 + sx * 40, 116, 64, 80); p.drawPath(lo)
+        p.setBrush(Qt.BrushStyle.NoBrush); p.drawLine(QPointF(64, 48), QPointF(64, 86))
+        p.drawLine(QPointF(64, 48), QPointF(54, 30)); p.drawLine(QPointF(64, 48), QPointF(74, 30))
+    elif kind == "lighthouse":
+        _fill(p)
+        tower = QPainterPath(QPointF(50, 118)); tower.lineTo(56, 44); tower.lineTo(72, 44); tower.lineTo(78, 118); tower.closeSubpath(); p.drawPath(tower)
+        p.drawRect(QRectF(52, 28, 24, 16)); p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawLine(QPointF(76, 36), QPointF(124, 20)); p.drawLine(QPointF(76, 36), QPointF(124, 52))
+        for y in (62, 80, 98): p.drawLine(QPointF(54, y), QPointF(74, y))
+    elif kind == "crown":
+        _fill(p)
+        cr = QPainterPath(QPointF(24, 96)); cr.lineTo(20, 44); cr.lineTo(44, 66); cr.lineTo(64, 30); cr.lineTo(84, 66); cr.lineTo(108, 44); cr.lineTo(104, 96); cr.closeSubpath(); p.drawPath(cr)
+        p.setBrush(INK)
+        for x, y in ((20, 44), (64, 30), (108, 44)): p.drawEllipse(QPointF(x, y), 4, 4)
+    elif kind == "tree":
+        p.drawLine(QPointF(64, 120), QPointF(64, 70))
+        for x0, y0, x1, y1 in ((64, 90, 40, 70), (64, 80, 90, 56), (64, 100, 82, 84), (64, 120, 44, 126), (64, 120, 86, 126)): p.drawLine(QPointF(x0, y0), QPointF(x1, y1))
+        _fill(p); p.drawEllipse(QRectF(24, 18, 80, 60))
     else:
         p.drawEllipse(c, 30, 30)
+    p.end()
+    return img
+
+
+def draw_constellation(stars: list[tuple[float, float]], lines: list[tuple[int, int]], size: int = 320) -> QImage:
+    """A real star pattern: hairlines between the stars, the stars as soft points."""
+    img = QImage(size, size, QImage.Format.Format_ARGB32_Premultiplied)
+    img.fill(Qt.GlobalColor.transparent)
+    p = QPainter(img)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    pts = [QPointF(16 + x * (size - 32), 16 + y * (size - 32)) for x, y in stars]
+    pen = QPen(theme.alpha(INK, 0.45), 1.2); p.setPen(pen)
+    for a, b in lines:
+        p.drawLine(pts[a], pts[b])
+    p.setPen(Qt.PenStyle.NoPen)
+    for i, pt in enumerate(pts):
+        r = 5.0 if i < 3 else 3.6
+        p.setBrush(theme.alpha(INK, 0.25)); p.drawEllipse(pt, r * 2.2, r * 2.2)
+        p.setBrush(INK); p.drawEllipse(pt, r, r)
     p.end()
     return img
 
@@ -208,6 +285,9 @@ def draw_text(text: str, px: int, bold: bool = True, family: str = "MONO") -> QI
     f = theme.font(px * 0.75, bold, 1.4)
     if fams:
         f.setFamilies(fams)
+        f.setLetterSpacing(f.SpacingType.AbsoluteSpacing, 0.6)
+    elif family not in PHRASE_FONTS:                      # any installed family, by name
+        f.setFamilies([family, "DejaVu Sans"])
         f.setLetterSpacing(f.SpacingType.AbsoluteSpacing, 0.6)
     fm = QFontMetricsF(f)
     w = int(fm.horizontalAdvance(text)) + 24
@@ -280,6 +360,11 @@ class TextureCache:
 
     def text(self, text: str, px: int, family: str = "MONO") -> tuple[int, int, int]:
         return self._get(("text", text, px, family), lambda: draw_text(text, px, True, family))
+
+    def constellation(self, index: int) -> tuple[int, int, int]:
+        from ..stories import CONSTELLATIONS
+        _, _, stars, lines = CONSTELLATIONS[index]
+        return self._get(("const", index), lambda: draw_constellation(stars, lines))
 
     def handscript(self, text: str, px: int) -> tuple[int, int, int]:
         return self._get(("hand", text, px), lambda: draw_handscript(text, px))

@@ -89,7 +89,7 @@ def test_aura_intensity_is_bounded():
 
 def test_stories_table_and_scheduler():
     from party.stories import STORIES, Stories
-    assert len(STORIES) == 200 and len({k for k, _ in STORIES}) == 20
+    assert len(STORIES) == 250 and len({k for k, _ in STORIES}) == 30
     s = Stories(every=(1, 2), seed=3)
     shots = [s.frame(t / 10) for t in range(400)]
     assert any(shots) and s.played >= 2
@@ -142,3 +142,35 @@ def test_profile_round_trip(tmp_path, monkeypatch):
     w.load_profile("holy fire")
     assert (w.aura_color, w.aura_border, w.aura_bright, w.aura_waves) == (3, 8, 0.6, 2)
     assert w.profile == "holy fire"
+
+
+def test_constellations_are_real_patterns():
+    from party.stories import CONSTELLATIONS, Constellations
+    assert len(CONSTELLATIONS) == 10
+    for name, _, stars, lines in CONSTELLATIONS:
+        assert len(stars) >= 4 and all(0 <= a < len(stars) and 0 <= b < len(stars) for a, b in lines), name
+    c = Constellations(seed=1); c.gap = 2.0
+    assert any(c.frame(t / 10) for t in range(600))
+
+
+def test_depth_paths_change_scale():
+    from party.stories import Stories
+    s = Stories(seed=5)
+    scales = {round(x.scale, 2) for x in (s.frame(t / 10) for t in range(1500)) if x}
+    assert min(scales) < 0.5 and max(scales) > 1.5
+
+
+def test_settings_panel_binds_to_window(tmp_path, monkeypatch):
+    mw, w = _window(tmp_path, monkeypatch)
+    w.show()
+    w.toggle_settings()
+    assert w.settings.isVisible() and len(w.settings.families) > 10
+    w.bar_fill = 0.7; w.aura_edges = 10; w.ledaie_color = -2
+    w.settings.refresh()                      # widgets follow the window
+    w.settings.tabs.setCurrentIndex(1)
+    w.settings.close_panel()
+    assert not w.settings.isVisible()
+    import json
+    w._changed()
+    data = json.loads((tmp_path / "state.json").read_text())
+    assert data["bar_fill"] == 0.7 and data["aura_edges"] == 10 and data["ledaie_color"] == -2

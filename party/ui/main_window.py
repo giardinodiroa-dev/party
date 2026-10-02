@@ -29,7 +29,9 @@ STATE = Path(os.environ.get("PARTY_STATE") or ROOT / "state.json")
 PROFILES = ROOT / "profiles"
 PROFILE_KEYS = ("mode", "sensitivity", "hotreload", "aura", "aura_width", "aura_bold", "aura_astral",
                 "aura_color", "aura_border", "aura_ghost", "aura_waves", "aura_shape", "aura_bright",
-                "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "story_gap", "phrase_gap", "phrase_font", "phrase_color", "phrase_size", "phrase_anim")
+                "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "story_gap", "phrase_gap", "phrase_font", "phrase_color", "phrase_size", "phrase_anim",
+                "bar_height", "bar_fill", "phrase_custom", "ledaie_on", "ledaie_font", "ledaie_color", "ledaie_custom",
+                "caption_font", "caption_color", "caption_custom", "constellations_on")
 TITLE_H = 30.0
 BAR_H = 56.0
 EDGE = 7
@@ -165,6 +167,18 @@ class MainWindow(QWidget):
         self.phrase_color = 0
         self.phrase_size = 1
         self.phrase_anim = 0
+        self.bar_height = 0.10
+        self.bar_fill = 0.4
+        self.phrase_custom = (200.0, 0.8)
+        self.ledaie_on = True
+        self.ledaie_font = "MONO"
+        self.ledaie_color = 5
+        self.ledaie_custom = (45.0, 0.8)
+        self.caption_font = "MONO"
+        self.caption_color = 0
+        self.caption_custom = (200.0, 0.85)
+        self.constellations_on = True
+        self.settings = None
         self.aura_lens = False
         self.aura_brainwash = True
         self.aura_stories = True
@@ -239,9 +253,24 @@ class MainWindow(QWidget):
         self.story_gap = min(300.0, max(3.0, float(state.get("story_gap", 20.0))))
         self.phrase_gap = min(120.0, max(1.0, float(state.get("phrase_gap", 5.0))))
         self.phrase_font = state.get("phrase_font") if state.get("phrase_font") in PHRASE_FONT_NAMES else "MONO"
-        self.phrase_color = int(state.get("phrase_color", 0)) % len(COLOR_MODES)
+        self.phrase_color = int(state.get("phrase_color", 0)) % len(COLOR_MODES) if int(state.get("phrase_color", 0)) >= 0 else -2
         self.phrase_size = int(state.get("phrase_size", 1)) % 4
         self.phrase_anim = int(state.get("phrase_anim", 0)) % len(PHRASE_ANIMS)
+        self.bar_height = min(0.3, max(0.03, float(state.get("bar_height", 0.10))))
+        self.bar_fill = min(0.95, max(0.15, float(state.get("bar_fill", 0.4))))
+        self.ledaie_on = bool(state.get("ledaie_on", True))
+        self.constellations_on = bool(state.get("constellations_on", True))
+        self.ledaie_font = str(state.get("ledaie_font", "MONO"))
+        self.caption_font = str(state.get("caption_font", "MONO"))
+        self.ledaie_color = max(-2, min(len(COLOR_MODES) - 1, int(state.get("ledaie_color", 5))))
+        self.caption_color = max(-2, min(len(COLOR_MODES) - 1, int(state.get("caption_color", 0))))
+        self.phrase_color = max(-2, self.phrase_color)
+        if state.get("phrase_color") == -2:
+            self.phrase_color = -2
+        for key in ("phrase_custom", "ledaie_custom", "caption_custom"):
+            v = state.get(key)
+            if isinstance(v, (list, tuple)) and len(v) == 2:
+                setattr(self, key, (float(v[0]), float(v[1])))
         self.aura_lens = bool(state.get("aura_lens", False))
         self.aura_brainwash = bool(state.get("aura_brainwash", True))
         self.aura_stories = bool(state.get("aura_stories", True))
@@ -261,6 +290,8 @@ class MainWindow(QWidget):
         p.bright = self.aura_bright
         p.edges = self.aura_edges
         p.bar_color = self.aura_barcolor
+        p.bar_height = self.bar_height
+        p.bar_fill = self.bar_fill
         p.spectrum = lv.spectrum
         if self.aura is not None:
             self.aura.flags["stories"] = self.aura_stories
@@ -271,6 +302,15 @@ class MainWindow(QWidget):
             self.aura.flags["phrase_color"] = self.phrase_color
             self.aura.flags["phrase_size"] = self.phrase_size
             self.aura.flags["phrase_anim"] = self.phrase_anim
+            self.aura.flags["phrase_custom"] = self.phrase_custom
+            self.aura.flags["ledaie"] = self.ledaie_on
+            self.aura.flags["ledaie_font"] = self.ledaie_font
+            self.aura.flags["ledaie_color"] = self.ledaie_color
+            self.aura.flags["ledaie_custom"] = self.ledaie_custom
+            self.aura.flags["caption_font"] = self.caption_font
+            self.aura.flags["caption_color"] = self.caption_color
+            self.aura.flags["caption_custom"] = self.caption_custom
+            self.aura.flags["constellations"] = self.constellations_on
         return p
 
     STORY_GAPS = [5.0, 10.0, 20.0, 40.0, 90.0]
@@ -285,6 +325,21 @@ class MainWindow(QWidget):
         g = self.PHRASE_GAPS
         self.phrase_gap = g[(g.index(self.phrase_gap) + 1) % len(g)] if self.phrase_gap in g else g[0]
         self._changed()
+
+    def toggle_settings(self) -> None:
+        if self.settings is None:
+            from .settings import SettingsPanel
+            self.settings = SettingsPanel(self)
+        if self.settings.isVisible():
+            self.settings.close_panel()
+        else:
+            self.settings.open_panel()
+        self._show_chrome()
+
+    def resizeEvent(self, e) -> None:  # noqa: N802
+        super().resizeEvent(e)
+        if self.settings is not None and self.settings.isVisible():
+            self.settings.place()
 
     def pick_fx(self) -> None:
         items = [("brainwash", f"BRAINWASH · {'ON' if self.aura_brainwash else 'OFF'}"),
@@ -365,10 +420,12 @@ class MainWindow(QWidget):
         """AURA: every line, border and glyph on the whole screen glows on the beat."""
         if self.aura is not None and self.aura.isVisible():
             self.aura.stop()
+            self.aura_wanted = False
         else:
             if self.aura is None:
                 self.aura = AuraWindow(self.aura_params, ROOT)
             self.aura.start()
+            self.aura_wanted = True
         self._changed()
 
     def _follow_default(self) -> None:
@@ -392,6 +449,11 @@ class MainWindow(QWidget):
                 "story_gap": self.story_gap, "phrase_gap": self.phrase_gap,
                 "phrase_font": self.phrase_font, "phrase_color": self.phrase_color,
                 "phrase_size": self.phrase_size, "phrase_anim": self.phrase_anim,
+                "bar_height": round(self.bar_height, 3), "bar_fill": round(self.bar_fill, 3),
+                "phrase_custom": list(self.phrase_custom), "ledaie_on": self.ledaie_on,
+                "ledaie_font": self.ledaie_font, "ledaie_color": self.ledaie_color, "ledaie_custom": list(self.ledaie_custom),
+                "caption_font": self.caption_font, "caption_color": self.caption_color,
+                "caption_custom": list(self.caption_custom), "constellations_on": self.constellations_on,
                 "profile": self.profile,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
@@ -530,7 +592,7 @@ class MainWindow(QWidget):
         elif action == "color":
             self.pick_color()
         elif action == "fx":
-            self.pick_fx()
+            self.toggle_settings()
         elif action == "brainwash":
             self.aura_brainwash = not self.aura_brainwash
             self._changed()
@@ -886,7 +948,9 @@ class MainWindow(QWidget):
         if k == Qt.Key.Key_F:
             self.toggle_fullscreen()
         elif k == Qt.Key.Key_Escape:
-            if self.isFullScreen():
+            if self.settings is not None and self.settings.isVisible():
+                self.settings.close_panel()
+            elif self.isFullScreen():
                 self.showNormal()
                 self._changed()
         elif k == Qt.Key.Key_Space:
@@ -911,7 +975,7 @@ class MainWindow(QWidget):
         elif k == Qt.Key.Key_G:
             self._act("ghost")
         elif k == Qt.Key.Key_X:
-            self.pick_fx()
+            self.toggle_settings()
         elif k == Qt.Key.Key_W and e.modifiers() & Qt.KeyboardModifier.ShiftModifier:
             self.cycle_phrase_gap()
         elif k == Qt.Key.Key_W:

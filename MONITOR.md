@@ -40,3 +40,8 @@ should save the configuration"; "the stories have to be real drawings not handdr
 profile saving depending on what I like". Built: atomic save-on-change + SIGTERM save +
 PARTY_STATE for tests (root cause of the loss: my test runs overwrote his state.json); per-actor
 paintings in art/; BARS edge shape (default); BRIGHT slider; profiles P / Shift+P.
+
+His words (2026-10-02, later asks): bars on edges he chooses, slim bars, bar colour options,
+story/phrase pace, Ledaie symbols + dictionary words, phrase fonts/colours/animations, depth
+motion, more drawings, real constellations, visible ghosts/angels, and "a proper settings pop up
+to do this comfortably" with many fonts and text colours. Built: all; settings panel = X.

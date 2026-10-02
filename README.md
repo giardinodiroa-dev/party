@@ -53,3 +53,17 @@ Brainwash phrase style (in the `X` picker, each row taps to cycle): font MONO / 
 HANDSCRIPT (your Ledaie letters), colour world, size S/M/L/XL, motion FADE / PULSE / RISE / TYPE /
 FLASH. Stories also show Ledaie: lone handscript symbols and random dictionary words with their
 English, read live from `~/ledaie/Ledaie - Dictionary.csv`.
+
+Depth: stories fly in nine paths including approach (from the deep toward you), recede and weave,
+with perspective toward a vanishing point; flat paths breathe in depth too. Thirty actors, 250
+stories. Ten real constellations (Orion, Ursa Major, Cassiopeia, Cygnus, Scorpius, Leo, Lyra,
+Crux, Gemini, Taurus) fade in large and faint with their names; patterns are approximate sky
+projections. Ghost figures are brighter now and have eyes; angels, Jesus, doves, the phoenix and
+the crown come round about twice as often as the rest.
+
+## Settings panel
+
+`X` (or the FX chip) opens a settings panel inside the window: LOOK, BARS, BRAINWASH, STORIES,
+PROFILES. Every control applies at once and is saved. Any installed font can be chosen for
+phrases, Ledaie lines and captions; each text role has a colour world or a CUSTOM hue and
+lightness. Bars: style, shape, colour, height, slimness and which edges. Esc closes the panel.
