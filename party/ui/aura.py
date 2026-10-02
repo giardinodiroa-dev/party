@@ -343,6 +343,9 @@ in vec2 tuv; out vec4 frag;
 uniform int mode; uniform vec3 joints[12]; uniform float woman; uniform float yaw; uniform float bank;
 uniform vec3 tint; uniform float alpha; uniform float time; uniform float engine;
 uniform sampler2D halo; uniform sampler2D clean; uniform vec2 res; uniform float behind;
+uniform int look;              // 0 chrome · 1 holo · 2 toon · 3 pearl · 4 neon · 5 ghost
+float hash21s(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+vec3 pearlc(float t){ vec3 c = 0.72 + 0.28 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67))); return mix(c, vec3(1.0), 0.22); }
 float smin(float a, float b, float k){ float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
 float sdCapsule(vec3 p, vec3 a, vec3 b, float r){ vec3 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - r; }
 float sdEllipsoid(vec3 p, vec3 r){ return (length(p / r) - 1.0) * min(min(r.x, r.y), r.z); }   // conservative: never overshoots
@@ -393,13 +396,32 @@ vec2 ship(vec3 p){
   if (eng < d) { d = eng; mat = 5.0; }
   return vec2(d, mat);
 }
-vec2 map(vec3 p){ return mode == 0 ? figure(p) : ship(p); }
+vec2 saucer(vec3 p){
+  p = rotZ(bank) * rotY(yaw) * p;
+  float r = length(p.xz);
+  float upper = max(sdEllipsoid(p, vec3(0.5, 0.1, 0.5)), -p.y);                      // lens: domed top
+  float lower = max(sdEllipsoid(p - vec3(0.0, 0.01, 0.0), vec3(0.48, 0.17, 0.48)), p.y);  // deeper belly
+  float d = smin(upper, lower, 0.03);
+  float seam = length(vec2(r - 0.5, p.y)) - 0.025;                                    // equator band
+  d = smin(d, seam, 0.01);
+  float mat = 3.0;
+  float dome = max(length(p - vec3(0.0, 0.05, 0.0)) - 0.2, 0.07 - p.y);              // glass cap rising from the hull
+  if (dome < d) { d = dome; mat = 4.0; }
+  float lamps = 1e9;
+  for (int i = 0; i < 12; i++) { float a = float(i) * 0.5235988; vec3 c = vec3(cos(a) * 0.36, 0.062, sin(a) * 0.36); lamps = min(lamps, length(p - c) - 0.03); }
+  float ring = length(vec2(r - 0.22, p.y + 0.165)) - 0.02;                            // engine ring under the belly
+  lamps = min(lamps, ring);
+  if (lamps < d) { d = lamps; mat = 5.0; }
+  return vec2(d, mat);
+}
+vec2 map(vec3 p){ return mode == 0 ? figure(p) : (mode == 2 ? saucer(p) : ship(p)); }
 vec3 normalAt(vec3 p){ vec2 e = vec2(0.002, 0.0); vec3 g = vec3(map(p + e.xyy).x - map(p - e.xyy).x, map(p + e.yxy).x - map(p - e.yxy).x, map(p + e.yyx).x - map(p - e.yyx).x); return normalize(g + vec3(0.0, 0.0, 1e-5)); }
 void main(){
   vec2 q = tuv * 2.0 - 1.0;                       // -1..1 over the quad
   vec3 ro, rd;
   if (mode == 0) { ro = vec3(q.x * 0.62, q.y * 0.62 + 0.5, 2.0); rd = vec3(0.0, 0.0, -1.0); }
   else { ro = vec3(q.x * 0.7, q.y * 0.7, 2.0); rd = vec3(0.0, 0.0, -1.0); }
+  if (mode == 2) { ro = rotX(0.8) * vec3(q.x * 0.7, q.y * 0.7 + 0.05, 2.0); rd = rotX(0.8) * vec3(0.0, 0.0, -1.0); }   // saucer: hero shot from above
   float t = 0.0, tPrev = 0.0, dmin = 1e9, mat = 0.0; bool hit = false;
   for (int i = 0; i < 160; i++) {
     vec3 p = ro + rd * t; vec2 r = map(p);
@@ -414,11 +436,11 @@ void main(){
   }
   vec3 col = vec3(0.0); float a = 0.0;
   if (hit) {
-    vec3 p = ro + rd * t; vec3 n = normalAt(p);
+    vec3 p = ro + rd * t; vec3 n = normalAt(p); vec3 v = -rd;
     vec3 key = normalize(vec3(-0.5, 0.8, 0.9)); vec3 fill = normalize(vec3(0.7, 0.2, 0.6));
     float diff = max(dot(n, key), 0.0); float fl = max(dot(n, fill), 0.0) * 0.35;
-    float rim = pow(clamp(1.0 - dot(n, vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 3.0);       // never pow() a negative: NaN paints black
-    float spec = pow(clamp(dot(reflect(-key, n), vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 24.0);
+    float rim = pow(clamp(1.0 - dot(n, v), 0.0, 1.0), 3.0);       // never pow() a negative: NaN paints black
+    float spec = pow(clamp(dot(reflect(-key, n), v), 0.0, 1.0), 24.0);
     vec3 base;
     if (mat < 0.5) base = vec3(0.93, 0.80, 0.70);                 // skin, warm
     else if (mat < 1.5) base = vec3(0.22, 0.14, 0.12);            // hair
@@ -430,8 +452,38 @@ void main(){
     col = base * (0.18 + 0.85 * diff + fl) + vec3(1.0, 0.95, 0.9) * spec * ((mat > 3.5 && mat < 4.5) ? 1.2 : 0.4)
         + vec3(0.85, 0.9, 1.0) * rim * 0.9 + base * sss * vec3(1.0, 0.5, 0.4);
     if (mat > 4.5) col += vec3(1.0, 0.7, 0.3) * (1.5 + 1.5 * engine);
+    // ---- the looks (eye exam): same body, different aesthetics ----
+    float fres = pow(1.0 - max(dot(n, v), 0.0), 2.0);
+    vec3 rv = reflect(rd, n);
+    if (look == 0) {                                           // CHROME: brushed metal, sky reflection, hard spec
+      vec3 sky = mix(vec3(0.08, 0.09, 0.12), vec3(0.75, 0.82, 0.95), clamp(rv.y * 0.5 + 0.5, 0.0, 1.0));
+      vec3 metal = (mat > 3.5 && mat < 4.5) ? vec3(0.4, 0.7, 0.95) : vec3(0.78, 0.8, 0.84);
+      col = metal * (0.15 + 0.6 * diff) + sky * (0.35 + 0.5 * fres) + vec3(1.0) * pow(spec, 2.0) * 1.2;
+      if (mat > 4.5) col = vec3(1.0, 0.75, 0.35) * 3.0;
+    } else if (look == 1) {                                    // HOLO: light only — contour lines, no solid
+      float iso = abs(fract(p.y * 46.0) - 0.5); float lines = smoothstep(0.08, 0.0, iso);
+      float ring = smoothstep(0.03, 0.0, abs(length(p.xz) - 0.5)) + smoothstep(0.03, 0.0, abs(length(p.xz) - 0.36)) + smoothstep(0.02, 0.0, abs(length(p.xz) - 0.19));
+      vec3 teal = vec3(0.37, 0.89, 0.89);
+      col = teal * (lines * 0.8 + ring * 0.9 + fres * 0.9) + (mat > 4.5 ? teal * 2.5 : vec3(0.0));
+      a = (mat > 4.5) ? 1.0 : clamp(0.1 + lines * 0.6 + ring * 0.7 + fres * 0.7, 0.0, 0.95);
+    } else if (look == 2) {                                    // TOON: three bands and ink
+      float band = diff < 0.3 ? 0.35 : (diff < 0.65 ? 0.7 : 1.0);
+      vec3 flat_ = (mat > 3.5 && mat < 4.5) ? vec3(0.55, 0.85, 1.0) : (mat > 4.5 ? vec3(1.0, 0.85, 0.45) : vec3(0.72, 0.76, 0.84));
+      col = flat_ * band; if (fres > 0.72) col = vec3(0.03, 0.03, 0.05);          // ink outline
+    } else if (look == 3) {                                    // PEARL: mother-of-pearl, colour shifts with angle
+      vec3 pc = pearlc(fres * 0.8 + p.x * 0.3 + time * 0.05);
+      col = pc * (0.35 + 0.65 * diff) + vec3(1.0) * spec * 0.6 + pc * fres * 0.6;
+      if (mat > 4.5) col = vec3(1.0, 0.9, 0.7) * 2.5;
+    } else if (look == 4) {                                    // NEON: dark body, cyan rim, magenta inner rim
+      col = vec3(0.02, 0.03, 0.05) + vec3(0.37, 0.89, 1.0) * pow(fres, 1.5) * 1.4 + vec3(1.0, 0.37, 0.78) * pow(clamp(fres - 0.15, 0.0, 1.0), 3.0) * 1.2;
+      if (mat > 4.5) col = vec3(0.37, 0.89, 1.0) * 3.0;
+    } else if (look == 5) {                                    // GHOST: translucent, lit from inside
+      vec3 g = vec3(0.85, 0.88, 1.0);
+      col = g * (0.25 + 0.5 * fres) + g * 0.25 * diff; a = 0.35 + 0.5 * fres;
+      if (mat > 4.5) { col = vec3(1.0, 0.95, 0.8) * 2.0; a = 1.0; }
+    }
     col = min(col * tint, vec3(1.0));                        // valid premultiplied output: never brighter than alpha allows
-    a = 1.0;
+    if (look != 1 && look != 5) a = 1.0;
   }
   float haloA = exp(-max(dmin, 0.0) * 22.0) * 0.35;             // a soft light around the body
   col += tint * vec3(0.8, 0.85, 1.0) * haloA * (1.0 - a);
@@ -440,7 +492,7 @@ void main(){
   // black), and the screen's own pixels are painted over it where there is text or a line.
   vec2 suv = gl_FragCoord.xy / res;
   float content = smoothstep(0.02, 0.18, texture(halo, suv).r) * behind;
-  if (a > 0.5) {
+  if (a > 0.5 && look != 1 && look != 5) {
     col = mix(col, texture(clean, suv).rgb, content * 0.95);
     frag = vec4(col * 0.985 * alpha, 0.985 * alpha);
   } else {
@@ -606,6 +658,7 @@ class AuraPipeline:
                 self._draw("sdf", [self.blur_fbo[1].texture(), clean], (W, H), {"halo": 0, "clean": 1, "behind": float(b.get("behind", 1.0)), "mode": int(b["mode"]), "rect": tuple(b["rect"]), "woman": float(b.get("woman", 0.0)),
                                                "yaw": float(b.get("yaw", 0.0)), "bank": float(b.get("bank", 0.0)), "tint": tuple(b.get("tint", (1.0, 1.0, 1.0))),
                                                "alpha": float(b.get("alpha", 1.0)), "time": float(p.time), "engine": float(b.get("engine", 0.0)),
+                                               "look": int(b.get("look", 0)),
                                                "angle": 0.0, "res": (float(W), float(H))}, strip=True)
             gl.glDisable(gl.GL_BLEND)
         if p.sprites:

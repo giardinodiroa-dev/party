@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Party · eye exam · saucer</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="static/stage.css">
+<style>
+body{padding:18px 16px 90px;max-width:1240px;margin:0 auto}
+h1{font-size:12px;letter-spacing:3px;color:var(--bone);margin:0 0 4px}.sub{color:var(--dim);font-size:11px;margin:0 0 18px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:24px}
+.card{background:var(--panel);border:1px solid var(--hair);border-radius:4px;padding:12px}
+.card h2{font-size:12px;letter-spacing:2px;color:var(--bone);margin:0 0 4px}.card .one{color:var(--dim);font-size:11px;margin:0 0 10px}
+.card img{display:block;width:100%;border:1px solid var(--hair);background:#000;cursor:zoom-in}
+.card img.close{margin-top:6px}
+.lab{font-size:9px;letter-spacing:2px;color:var(--dim);margin:8px 0 2px}
+.fb{margin-top:10px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
+textarea{width:100%;min-height:64px;background:var(--void);color:var(--bone);border:1px solid var(--hair);border-radius:4px;padding:8px;font:12px/1.4 monospace;resize:vertical}
+textarea:focus{outline:0;border-color:var(--good)}
+.btns{display:flex;flex-direction:column;gap:6px}
+button.b{background:var(--panel);color:var(--text);border:1px solid var(--hair);border-radius:4px;padding:7px 10px;font:10px/1 monospace;letter-spacing:1.5px;cursor:pointer}
+button.b:hover{color:var(--bone);border-color:#3a3550}button.b.good{color:var(--good)}button.b.bad{color:var(--bad)}
+.status{color:var(--dim);font-size:10px;margin-top:6px;min-height:12px}
+.done{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--hair);padding:12px 16px;display:flex;gap:14px;align-items:center;justify-content:center}
+.done button{background:var(--void);color:var(--good);border:1px solid var(--good);border-radius:4px;padding:10px 18px;font:bold 11px/1 monospace;letter-spacing:2px;cursor:pointer}
+#zoom{position:fixed;inset:0;background:rgba(7,7,10,.96);display:none;overflow:hidden;cursor:grab;z-index:9}
+#zoom img{position:absolute;left:0;top:0;transform-origin:0 0;user-select:none;-webkit-user-drag:none}
+#zoom .hint{position:absolute;left:12px;top:10px;color:var(--dim);font-size:10px;letter-spacing:1.5px}
+</style></head><body>
+<h1>EYE EXAM · THE FLYING SAUCER · SIX LOOKS</h1>
+<p class="sub">One subject, the same 3D hull, rendered six ways by the real shader. Click any image to zoom (wheel zooms, drag pans, double-click 1:1, Esc closes). Under each: say what is right, what is wrong, or just GOOD / BAD. Point like at the optometrist: "B", "D but quieter", "never C".</p>
+<div class="grid" id="grid"></div>
+<div class="done"><span id="count" style="color:var(--dim);font-size:11px">0 with feedback</span><button id="doneBtn">I'M DONE · GO BUILD</button></div>
+<div id="zoom"><span class="hint">wheel · drag · double-click 1:1 · esc</span><img id="zimg"></div>
+<script>
+const LOOKS=[["A-chrome","A · CHROME","brushed metal, sky in the hull, glass dome, hard highlights"],["B-holo","B · HOLO","light only: contour lines and rings, nothing solid (the airmouse family)"],["C-toon","C · TOON","three flat bands and an ink outline"],["D-pearl","D · PEARL","mother-of-pearl, the colour shifts with the angle"],["E-neon","E · NEON","dark body, cyan rim, magenta inner rim"],["F-ghost","F · GHOST","translucent, lit from inside, lamps burning through"]];
+async function post(u,d){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});return r.json();}
+async function main(){
+  const {feedback}=await (await fetch('clips.json')).json(); const grid=document.getElementById('grid');
+  for(const [id,title,one] of LOOKS){
+    const prev=(feedback.clips||{})['saucer-'+id]||{}; const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<h2>${title}</h2><p class="one">${one}</p><div class="lab">FULL</div><img src="aesthetics/${id}.png" data-full="aesthetics/${id}.png"><div class="lab">CLOSE-UP</div><img class="close" src="aesthetics/${id}-close.png" data-full="aesthetics/${id}.png">
+      <div class="fb"><textarea placeholder="what is right · what is wrong">${prev.text||''}</textarea><div class="btns"><button class="b good">GOOD</button><button class="b bad">BAD</button><button class="b save">SAVE</button></div></div><div class="status">${prev.at?'saved '+prev.at+(prev.verdict?' · '+prev.verdict:''):''}</div>`;
+    const ta=card.querySelector('textarea'), st=card.querySelector('.status');
+    const send=async v=>{const r=await post('/feedback',{clip:'saucer-'+id,text:ta.value,verdict:v}); st.textContent='saved · '+(v||''); document.getElementById('count').textContent=r.saved+' with feedback';};
+    card.querySelector('.good').onclick=()=>send('good'); card.querySelector('.bad').onclick=()=>send('bad'); card.querySelector('.save').onclick=()=>send('');
+    card.querySelectorAll('img').forEach(im=>im.addEventListener('click',()=>openZoom(im.dataset.full)));
+    grid.appendChild(card);
+  }
+  document.getElementById('count').textContent=Object.keys(feedback.clips||{}).filter(k=>k.startsWith('saucer-')).length+' with feedback';
+  document.getElementById('doneBtn').onclick=async()=>{const r=await post('/done',{}); document.getElementById('doneBtn').textContent='SENT · CLAUDE WILL READ IT';};
+}
+// zoom: click opens, wheel zooms toward the pointer, drag pans, double-click toggles 1:1, esc closes
+const Z=document.getElementById('zoom'), ZI=document.getElementById('zimg'); let s=1,tx=0,ty=0,drag=null;
+function apply(){ZI.style.transform=`translate(${tx}px,${ty}px) scale(${s})`;}
+function openZoom(src){ZI.src=src;Z.style.display='block';ZI.onload=()=>{s=Math.min(innerWidth/ZI.naturalWidth,innerHeight/ZI.naturalHeight);tx=(innerWidth-ZI.naturalWidth*s)/2;ty=(innerHeight-ZI.naturalHeight*s)/2;apply();};}
+Z.addEventListener('wheel',e=>{e.preventDefault();const k=e.deltaY<0?1.15:1/1.15;const nx=e.clientX,ny=e.clientY;tx=nx-(nx-tx)*k;ty=ny-(ny-ty)*k;s*=k;apply();},{passive:false});
+Z.addEventListener('mousedown',e=>{drag=[e.clientX-tx,e.clientY-ty];Z.style.cursor='grabbing';});
+addEventListener('mousemove',e=>{if(drag){tx=e.clientX-drag[0];ty=e.clientY-drag[1];apply();}}); addEventListener('mouseup',()=>{drag=null;Z.style.cursor='grab';});
+Z.addEventListener('dblclick',e=>{if(s!==1){tx=e.clientX-(e.clientX-tx)/s;ty=e.clientY-(e.clientY-ty)/s;s=1;}else{s=Math.min(innerWidth/ZI.naturalWidth,innerHeight/ZI.naturalHeight);tx=(innerWidth-ZI.naturalWidth*s)/2;ty=(innerHeight-ZI.naturalHeight*s)/2;}apply();});
+addEventListener('keydown',e=>{if(e.key==='Escape')Z.style.display='none';});
+main();
+</script></body></html>
