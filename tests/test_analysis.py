@@ -85,3 +85,19 @@ def test_aura_intensity_is_bounded():
     from party.ui.aura import AuraParams
     assert AuraParams(loud=0, bass=0, flash=0, sensitivity=0.3).intensity() > 0.0
     assert AuraParams(loud=1, bass=1, flash=1, sensitivity=3.0).intensity() <= 1.6
+
+
+def test_stories_table_and_scheduler():
+    from party.stories import STORIES, Stories
+    assert len(STORIES) == 200 and len({k for k, _ in STORIES}) == 20
+    s = Stories(every=(1, 2), seed=3)
+    shots = [s.frame(t / 10) for t in range(400)]
+    assert any(shots) and s.played >= 2
+
+
+def test_brainwash_defaults(tmp_path):
+    from party.brainwash import Brainwash
+    b = Brainwash(tmp_path)
+    assert (tmp_path / "phrases.txt").exists() and b.phrases
+    items = [b.frame(t) for t in (3.5, 4.0, 5.0)]
+    assert any(items)

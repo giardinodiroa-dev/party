@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QDialog, QListWidget, QListWidgetItem, QVBoxLayout, 
 from .. import theme
 from ..analysis import Levels
 from ..audio import AudioTap, default_monitor, list_sources
-from .aura import BORDER_STYLES, COLOR_MODES, AuraParams, AuraWindow
+from .aura import BORDER_STYLES, COLOR_MODES, WAVE_STYLES, AuraParams, AuraWindow
 from .visuals import MODES, Scene
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -118,6 +118,10 @@ class MainWindow(QWidget):
         self.aura_color = 0
         self.aura_border = 0
         self.aura_ghost = True
+        self.aura_waves = 0
+        self.aura_lens = False
+        self.aura_brainwash = True
+        self.aura_stories = True
         self._t0 = time.monotonic()
         self._drag_width = False
         self._width_rect = QRectF()
@@ -161,6 +165,10 @@ class MainWindow(QWidget):
         self.aura_color = int(state.get("aura_color", 0)) % len(COLOR_MODES)
         self.aura_border = int(state.get("aura_border", 0)) % len(BORDER_STYLES)
         self.aura_ghost = bool(state.get("aura_ghost", True))
+        self.aura_waves = int(state.get("aura_waves", 0)) % len(WAVE_STYLES)
+        self.aura_lens = bool(state.get("aura_lens", False))
+        self.aura_brainwash = bool(state.get("aura_brainwash", True))
+        self.aura_stories = bool(state.get("aura_stories", True))
         wanted = state.get("source")
         names = [n for n, _ in list_sources()]
         self.source = wanted if wanted in names else None      # None = AUTO: follow default output
@@ -179,9 +187,34 @@ class MainWindow(QWidget):
 
     def aura_params(self) -> AuraParams:
         lv = self.levels
-        return AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity,
-                          self.aura_width, self.aura_bold, self.aura_astral, time.monotonic() - self._t0,
-                          self.aura_color, self.aura_border, self.aura_ghost)
+        p = AuraParams(self.scene.hue, lv.loud, lv.bass, self.scene.flash, self.sensitivity,
+                       self.aura_width, self.aura_bold, self.aura_astral, time.monotonic() - self._t0,
+                       self.aura_color, self.aura_border, self.aura_ghost, self.aura_waves, self.aura_lens)
+        p.spectrum = lv.spectrum
+        if self.aura is not None:
+            self.aura.flags["stories"] = self.aura_stories
+            self.aura.flags["brainwash"] = self.aura_brainwash
+        return p
+
+    def pick_fx(self) -> None:
+        items = [("brainwash", f"BRAINWASH · {'ON' if self.aura_brainwash else 'OFF'}"),
+                 ("lens", f"BLACK HOLE CURSOR · {'ON' if self.aura_lens else 'OFF'}"),
+                 ("stories", f"STORIES · {'ON' if self.aura_stories else 'OFF'}")]
+        items += [(f"waves:{i}", f"EDGE WAVES · {n}" + (" ·· LIVE" if i == self.aura_waves else ""))
+                  for i, n in enumerate(WAVE_STYLES)]
+        menu = TinyMenu(self, items, None)
+        anchor = self._bar_rect.topLeft() if self._bar_rect.isValid() else QPointF(20, 20)
+        menu.move(self.mapToGlobal(QPointF(anchor.x() + 16, anchor.y() - menu.sizeHint().height() - 8).toPoint()))
+        menu.exec()
+        self._show_chrome()
+        c = menu.choice
+        if c is None:
+            return
+        if c.startswith("waves:"):
+            self.aura_waves = int(c[6:])
+        else:
+            self._act(c)
+        self._changed()
 
     def _pick_from(self, names: list[str], current: int, title: str) -> int | None:
         items = [(str(i), f"{title} · {n}") for i, n in enumerate(names)]
@@ -214,7 +247,7 @@ class MainWindow(QWidget):
             self.aura.stop()
         else:
             if self.aura is None:
-                self.aura = AuraWindow(self.aura_params)
+                self.aura = AuraWindow(self.aura_params, ROOT)
             self.aura.start()
         self._changed()
 
@@ -232,6 +265,8 @@ class MainWindow(QWidget):
                 "aura_width": round(self.aura_width, 2), "aura_bold": self.aura_bold,
                 "aura_astral": self.aura_astral, "aura_color": self.aura_color,
                 "aura_border": self.aura_border, "aura_ghost": self.aura_ghost,
+                "aura_waves": self.aura_waves, "aura_lens": self.aura_lens,
+                "aura_brainwash": self.aura_brainwash, "aura_stories": self.aura_stories,
                 "hotreload": self.hotreload_on,
                 "geometry": bytes(self.saveGeometry()).hex()}
 
@@ -309,6 +344,20 @@ class MainWindow(QWidget):
             self._changed()
         elif action == "color":
             self.pick_color()
+        elif action == "fx":
+            self.pick_fx()
+        elif action == "brainwash":
+            self.aura_brainwash = not self.aura_brainwash
+            self._changed()
+        elif action == "lens":
+            self.aura_lens = not self.aura_lens
+            self._changed()
+        elif action == "stories":
+            self.aura_stories = not self.aura_stories
+            self._changed()
+        elif action == "waves":
+            self.aura_waves = (self.aura_waves + 1) % len(WAVE_STYLES)
+            self._changed()
         elif action == "border":
             self.pick_border()
         elif action == "source":
@@ -388,8 +437,9 @@ class MainWindow(QWidget):
         if self.paused:
             parts.append("PAUSED")
         if self.aura is not None and self.aura.isVisible():
+            fx = "".join(ch for ch, on in (("W", self.aura_brainwash), ("K", self.aura_lens), ("N", self.aura_stories)) if on)
             parts.append(self.aura.error or f"AURA {COLOR_MODES[self.aura_color]} {BORDER_STYLES[self.aura_border]} "
-                                            f"{self.aura.fps}fps {self.aura.frame_ms:.1f}ms")
+                                            f"{WAVE_STYLES[self.aura_waves]} {fx} {self.aura.fps}fps {self.aura.frame_ms:.1f}ms")
         return " · ".join(parts), theme.GOOD if self.tap.alive and not self.paused else theme.WARN
 
     def _paint_bar(self, p: QPainter, rect: QRectF) -> None:
@@ -399,7 +449,7 @@ class MainWindow(QWidget):
         p.fillRect(QRectF(bar.left(), bar.top(), bar.width(), 1), QColor(theme.HAIRLINE))
         chips = [("mode:PULSE", "pulse", "1"), ("mode:BARS", "bars", "2"), ("mode:ORBS", "orbs", "3"),
                  ("aura", "aura", "4"), ("color", "color", "C"), ("border", "border", "T"),
-                 ("ghost", "ghost", "G"), ("bold", "bold", "B"), ("astral", "astral", "A"),
+                 ("ghost", "ghost", "G"), ("fx", "fx", "X"), ("bold", "bold", "B"), ("astral", "astral", "A"),
                  ("fullscreen", "full", "F"), ("source", "source", "S"),
                  ("pause", "play" if self.paused else "pause", "SPC"),
                  ("hotreload", "reload", "R")]
@@ -411,6 +461,7 @@ class MainWindow(QWidget):
                     or (action == "bold" and self.aura_bold)
                     or (action == "astral" and self.aura_astral)
                     or (action == "ghost" and self.aura_ghost)
+                    or (action == "fx" and (self.aura_lens or self.aura_waves or self.aura_brainwash or self.aura_stories))
                     or (action == "pause" and self.paused))
             box = QRectF(x, bar.top() + 8, 40, 40)
             if live:
@@ -488,6 +539,12 @@ class MainWindow(QWidget):
                 path.lineTo(QPointF(c.x() + r * 0.6 - r * 0.4 * (k_ + 0.5), c.y() + r * 0.6))
                 path.lineTo(QPointF(c.x() + r * 0.6 - r * 0.4 * (k_ + 1.0), c.y() + r))
             p.drawPath(path)
+        elif kind == "fx":
+            p.drawEllipse(c, r * 0.28, r * 0.28)
+            for ang in (0, 60, 120, 180, 240, 300):
+                a = math.radians(ang)
+                p.drawLine(QPointF(c.x() + math.cos(a) * r * 0.5, c.y() + math.sin(a) * r * 0.5),
+                           QPointF(c.x() + math.cos(a) * r, c.y() + math.sin(a) * r))
         elif kind == "bold":
             pen.setWidthF(3.6)
             p.setPen(pen)
@@ -634,6 +691,16 @@ class MainWindow(QWidget):
             self._changed()
         elif k == Qt.Key.Key_G:
             self._act("ghost")
+        elif k == Qt.Key.Key_X:
+            self.pick_fx()
+        elif k == Qt.Key.Key_W:
+            self._act("brainwash")
+        elif k == Qt.Key.Key_K:
+            self._act("lens")
+        elif k == Qt.Key.Key_V:
+            self._act("waves")
+        elif k == Qt.Key.Key_N:
+            self._act("stories")
         elif k == Qt.Key.Key_BracketLeft:
             self.nudge_width(-0.25)
         elif k == Qt.Key.Key_BracketRight:

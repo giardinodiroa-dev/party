@@ -27,3 +27,9 @@ borders… make it seem like we are seeing a ghost party or nebulas in the backg
 to restyle the border of the text… choose the borders or types of borders".
 Built: 7 colour modes (C / picker), 6 border styles (T / picker), 3x3 cell lookup for stars and
 orbs (no clipping), fbm nebula + ghost dancers (G), all persisted.
+
+His words (2026-10-02, fifth ask): water/ghost/fire borders; a brainwash feature (images + phrases
+"you go king, you can do this, you will make it" in the background); soundwaves/sound bars on the
+screen borders (electric, aqua, fire, ghost, magical); a tiny black-hole cursor that distorts what
+is around it; ~200 random stories in the void (spaceship, alien at the gas station, alien kiss,
+Jesus, angels…). Built: all five; see README.

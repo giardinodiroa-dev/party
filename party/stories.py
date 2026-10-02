@@ -1,0 +1,271 @@
+"""Two hundred small stories that pass through the void, at random, with a caption.
+
+Pure Python: no Qt, no GL. `Stories.frame(t)` says what to draw now:
+(sprite kind, x, y in 0..1, scale, alpha, caption, caption alpha) or None.
+"""
+from __future__ import annotations
+
+import random
+from dataclasses import dataclass
+
+STORIES: list[tuple[str, str]] = [
+    ("ufo", "a saucer cruises past, running lights dimmed, late for something"),
+    ("ufo", "the saucer slows down to read your screen, then speeds off embarrassed"),
+    ("ufo", "two saucers race; the left one is cheating"),
+    ("ufo", "a saucer tows a broken saucer home"),
+    ("ufo", "a saucer with a flat tyre limps across the void"),
+    ("ufo", "the saucer flashes its lights twice: hello king"),
+    ("ufo", "a saucer drops a tiny pizza box and vanishes"),
+    ("ufo", "a saucer full of tourists takes photos of your desktop"),
+    ("ufo", "a saucer parks, hazard lights blinking; somebody steps out for air"),
+    ("ufo", "a saucer does a lazy barrel roll just because it can"),
+    ("rocket", "a rocket passes with its window down, music leaking out"),
+    ("rocket", "a rocket climbs with a cat in the cockpit"),
+    ("rocket", "a rocket runs out of fuel and coasts, unbothered"),
+    ("rocket", "a rocket drags a banner: YOU GOT THIS"),
+    ("rocket", "a tiny rocket delivers a letter it never opens"),
+    ("rocket", "a rocket loops once for the applause"),
+    ("rocket", "a rocket carrying one single flower to someone far away"),
+    ("rocket", "a rocket falls asleep mid-flight and drifts gently"),
+    ("rocket", "a rocket hums along with your song"),
+    ("rocket", "a rocket salutes you and keeps going"),
+    ("alien", "an alien stops for gas, checks the price, sighs"),
+    ("alien", "a beautiful alien blows a kiss and dissolves into the void"),
+    ("alien", "an alien waves from the window of a passing cloud"),
+    ("alien", "an alien asks for directions to the nearest party"),
+    ("alien", "an alien reads a book about humans and laughs softly"),
+    ("alien", "an alien hitchhikes with a sign that says ANYWHERE"),
+    ("alien", "an alien dances to your music: three arms, no rhythm, pure joy"),
+    ("alien", "an alien drinks a coffee, two cups, one for you"),
+    ("alien", "an alien leaves a small gift on your taskbar"),
+    ("alien", "an alien nods: you are doing fine, keep going"),
+    ("angel", "an angel flies by, feathers trailing light"),
+    ("angel", "two angels gossip quietly about how good you look today"),
+    ("angel", "an angel polishes a star and hangs it back"),
+    ("angel", "an angel sits on the edge of the void, feet dangling"),
+    ("angel", "an angel carries a sleeping child across the dark"),
+    ("angel", "an angel drops a feather; it never lands"),
+    ("angel", "an angel checks a list, finds your name, smiles"),
+    ("angel", "an angel tunes a harp to the key of your song"),
+    ("angel", "an angel escorts a lost comet home"),
+    ("angel", "an angel whispers: breathe, king"),
+    ("jesus", "Jesus flies by, unhurried, and waves"),
+    ("jesus", "Jesus walks on the void like it is water"),
+    ("jesus", "Jesus stops to pet a passing cat"),
+    ("jesus", "Jesus shares bread with a hungry alien"),
+    ("jesus", "Jesus sits with a lonely satellite for a while"),
+    ("jesus", "Jesus calms a storm of static"),
+    ("jesus", "Jesus lights a lamp and leaves it burning for you"),
+    ("jesus", "Jesus writes something in the dust of a planet"),
+    ("jesus", "Jesus laughs at a joke an angel told"),
+    ("jesus", "Jesus looks straight at you: peace"),
+    ("comet", "a comet passes, dragging a tail of old wishes"),
+    ("comet", "a comet slows to admire your screen"),
+    ("comet", "a comet carries a letter from the future: it works out"),
+    ("comet", "a comet splits in two; both halves keep going"),
+    ("comet", "a comet races your heartbeat and loses"),
+    ("comet", "a comet draws a line under the day"),
+    ("comet", "a comet spells a letter you almost recognise"),
+    ("comet", "a comet leaves a trail of pollen; spring somewhere"),
+    ("comet", "a comet knocks on a planet; nobody home"),
+    ("comet", "a comet blushes as it goes by"),
+    ("planet", "a small planet rolls by, oceans sloshing"),
+    ("planet", "a planet with one tree floats past"),
+    ("planet", "a ringed planet spins its rings like a hula hoop"),
+    ("planet", "a planet yawns; a thousand sunrises at once"),
+    ("planet", "a planet drifts by with a city lit on the night side"),
+    ("planet", "a planet is being carried home by a very small moon"),
+    ("planet", "a planet turns its good side toward you"),
+    ("planet", "a planet with your name written on it, somewhere"),
+    ("planet", "a lonely planet finds a moon; they orbit"),
+    ("planet", "a planet passes slowly, like a parade float"),
+    ("moon", "the moon goes by on a late shift"),
+    ("moon", "a crescent moon used as a hammock by someone asleep"),
+    ("moon", "the moon winks and returns to its post"),
+    ("moon", "a blue moon, actually blue, just this once"),
+    ("moon", "the moon drops a coin into the void for luck"),
+    ("moon", "the moon reads over your shoulder, approves"),
+    ("moon", "a moon with a tiny flag planted on it: yours"),
+    ("moon", "the moon pulls a tide across the screen"),
+    ("moon", "the moon follows you the way it did when you were small"),
+    ("moon", "the moon hums a lullaby for the servers"),
+    ("gaspump", "a gas station floats by, OPEN sign flickering"),
+    ("gaspump", "an alien pays for gas with a shiny pebble"),
+    ("gaspump", "the gas pump offers a free windshield wipe for a rocket"),
+    ("gaspump", "the last gas station before the edge of everything"),
+    ("gaspump", "a saucer refuels; the attendant is a very calm octopus"),
+    ("gaspump", "the gas station plays your song on its speakers"),
+    ("gaspump", "a gas pump sells coffee that tastes like starlight"),
+    ("gaspump", "two ships at the pump compare mileage"),
+    ("gaspump", "the gas station closes; the sign still glows"),
+    ("gaspump", "a gas station with a rest stop for angels"),
+    ("cat", "a cat floats by, unimpressed by the universe"),
+    ("cat", "a cat chases a comet and wins"),
+    ("cat", "a cat naps on a passing planet"),
+    ("cat", "a cat in a tiny helmet, planning everything"),
+    ("cat", "a cat knocks a star off a shelf; it becomes a wish"),
+    ("cat", "a cat stares at the void; the void blinks first"),
+    ("cat", "a cat walks across the keyboard of the gods"),
+    ("cat", "a cat sits in a box; the box is a spaceship"),
+    ("cat", "a cat purrs; the vibration powers a small galaxy"),
+    ("cat", "a cat decides you are its person, briefly"),
+    ("whale", "a whale swims through the void, singing low"),
+    ("whale", "a whale carries a city on its back, lights on"),
+    ("whale", "a whale surfaces from the dark to breathe stars"),
+    ("whale", "a whale and its calf cross the screen slowly"),
+    ("whale", "a whale hums the bass line of your song"),
+    ("whale", "a whale wears a small crown; it is a king too"),
+    ("whale", "a whale opens an eye the size of a window"),
+    ("whale", "a whale leaves a wake of nebula behind it"),
+    ("whale", "a whale sleeps vertically, dreaming of water"),
+    ("whale", "a whale blesses the ship that passes beneath it"),
+    ("dove", "a dove carries an olive branch across the dark"),
+    ("dove", "a dove lands on a satellite and rests"),
+    ("dove", "a dove flies ahead of a storm, calm"),
+    ("dove", "a dove made of light, going home"),
+    ("dove", "a dove drops a seed onto a passing planet"),
+    ("dove", "a dove circles once above you: it is finished"),
+    ("dove", "a dove follows the rocket for company"),
+    ("dove", "a dove sleeps on a crescent moon"),
+    ("dove", "a dove with a letter: you are loved"),
+    ("dove", "a dove and a comet share the sky"),
+    ("star", "a star is born, shy, then bright"),
+    ("star", "a shooting star pauses to be wished upon"),
+    ("star", "a star puts on its coat and goes out for the night"),
+    ("star", "a star gets lost; a dove shows it the way"),
+    ("star", "a star signs your screen with its light"),
+    ("star", "a star falls up"),
+    ("star", "a small star warms its hands on a bigger one"),
+    ("star", "a star counts down from ten; nothing explodes; it laughs"),
+    ("star", "a star hides behind a planet, giggling"),
+    ("star", "a star says your name in a frequency only you hear"),
+    ("eye", "a great eye opens in the dark, kind, and closes"),
+    ("eye", "the eye of the storm takes a look around"),
+    ("eye", "an eye blinks; a thousand years pass"),
+    ("eye", "an eye of light watches over the sleeping city"),
+    ("eye", "the eye winks at you and dissolves"),
+    ("eye", "an eye made of stars reads the day you had"),
+    ("eye", "an eye sheds one tear: a nebula"),
+    ("eye", "the eye looks for you and finds you working"),
+    ("eye", "an eye floats by, dreaming"),
+    ("eye", "the all-seeing eye takes a break and watches your song"),
+    ("heart", "a heart drifts by, beating with your bass"),
+    ("heart", "two hearts orbit each other forever"),
+    ("heart", "a heart floats up from somewhere you forgot"),
+    ("heart", "a heart glows brighter on every beat"),
+    ("heart", "a heart with wings crosses the void"),
+    ("heart", "a heart breaks in two, then heals, then keeps going"),
+    ("heart", "a heart of light left on your desk by someone"),
+    ("heart", "a heart pulses a message: you will make it"),
+    ("heart", "a heart carried by a dove to its destination"),
+    ("heart", "a heart that is just happy you are here"),
+    ("satellite", "a satellite passes, blinking, doing its job"),
+    ("satellite", "a satellite tumbles slowly, sunlight on its wings"),
+    ("satellite", "a satellite whispers data to a sleeping dish"),
+    ("satellite", "an old satellite retires and drifts, content"),
+    ("satellite", "a satellite takes a picture of you and keeps it"),
+    ("satellite", "a satellite relays your song to someone far away"),
+    ("satellite", "a satellite and a dove watch the sunrise together"),
+    ("satellite", "a satellite drops out of orbit and becomes a star"),
+    ("satellite", "a satellite dreams of being a comet"),
+    ("satellite", "a satellite flies the flag of a country that is only love"),
+    ("astronaut", "an astronaut floats by, waving, tether trailing"),
+    ("astronaut", "an astronaut eats a sandwich upside down"),
+    ("astronaut", "an astronaut reads a letter from home and smiles"),
+    ("astronaut", "an astronaut plants a tiny garden on a passing rock"),
+    ("astronaut", "an astronaut loses a glove; it becomes a constellation"),
+    ("astronaut", "an astronaut dances the slowest dance"),
+    ("astronaut", "an astronaut salutes the whale"),
+    ("astronaut", "an astronaut takes a nap on a planet's shoulder"),
+    ("astronaut", "an astronaut writes YOU CAN DO THIS on the inside of the helmet"),
+    ("astronaut", "an astronaut goes home"),
+    ("dragon", "a dragon swims the void, scales catching starlight"),
+    ("dragon", "a dragon breathes a nebula and admires it"),
+    ("dragon", "a dragon carries a sleeping princess who is also a pilot"),
+    ("dragon", "a dragon coils around a moon to keep it warm"),
+    ("dragon", "a dragon races a comet, laughing smoke"),
+    ("dragon", "a dragon guards a treasure: your next idea"),
+    ("dragon", "a dragon hums the low notes of your song"),
+    ("dragon", "a dragon blinks golden eyes at you"),
+    ("dragon", "a dragon folds its wings and drifts, done for the day"),
+    ("dragon", "a dragon with a tiny rider waving a flag"),
+    ("unicorn", "a unicorn gallops across the dark, hooves sparking"),
+    ("unicorn", "a unicorn leaves a rainbow that fades slowly"),
+    ("unicorn", "a unicorn stops to drink from a nebula"),
+    ("unicorn", "a unicorn with a saddle and nobody riding, waiting for you"),
+    ("unicorn", "a unicorn jumps over the moon, classic"),
+    ("unicorn", "a unicorn bows its horn to a passing angel"),
+    ("unicorn", "a unicorn dreams in your direction"),
+    ("unicorn", "a unicorn carries a lantern through the void"),
+    ("unicorn", "a unicorn chases its own glitter"),
+    ("unicorn", "a unicorn neighs at the beat drop"),
+    ("fish", "a fish swims by, bubbles rising in no particular direction"),
+    ("fish", "a school of fish forms your initials and scatters"),
+    ("fish", "a fish carries a lantern on its forehead for everyone"),
+    ("fish", "a goldfish in a bowl drifts past, perfectly fine"),
+    ("fish", "a fish jumps from one nebula into another"),
+    ("fish", "a fish kisses the glass of your screen"),
+    ("fish", "a fish wears a small crown: the king of the small"),
+    ("fish", "a fish and a cat agree to disagree"),
+    ("fish", "a fish swims upstream through starlight"),
+    ("fish", "a fish that grants wishes considers yours"),
+]
+PATHS = ["pass_lr", "pass_rl", "drift_down", "orbit", "appear", "zoom"]
+
+
+@dataclass
+class Shot:
+    kind: str
+    x: float
+    y: float
+    scale: float
+    alpha: float
+    caption: str
+    caption_alpha: float
+
+
+class Stories:
+    def __init__(self, every: tuple[float, float] = (25.0, 70.0), seed: int | None = None) -> None:
+        self.rng = random.Random(seed)
+        self.every = every
+        self.next_at = 6.0
+        self.current: tuple[str, str, str, float, float, float] | None = None   # kind, caption, path, t0, dur, lane
+        self.played = 0
+
+    def frame(self, t: float) -> Shot | None:
+        if self.current is None:
+            if t >= self.next_at:
+                kind, caption = self.rng.choice(STORIES)
+                path = self.rng.choice(PATHS)
+                self.current = (kind, caption, path, t, self.rng.uniform(8.0, 14.0), self.rng.uniform(0.15, 0.75))
+                self.played += 1
+            return None
+        kind, caption, path, t0, dur, lane = self.current
+        u = (t - t0) / dur
+        if u >= 1.0:
+            self.current = None
+            self.next_at = t + self.rng.uniform(*self.every)
+            return None
+        return self._shot(kind, caption, path, u, lane, t)
+
+    @staticmethod
+    def _shot(kind: str, caption: str, path: str, u: float, lane: float, t: float) -> Shot:
+        import math
+        fade = min(1.0, u * 6.0, (1.0 - u) * 6.0)
+        if path == "pass_lr":
+            x, y, s = -0.1 + 1.2 * u, lane + 0.03 * math.sin(u * 6.0), 1.0
+        elif path == "pass_rl":
+            x, y, s = 1.1 - 1.2 * u, lane + 0.03 * math.sin(u * 6.0), 1.0
+        elif path == "drift_down":
+            x, y, s = lane, -0.1 + 1.2 * u, 1.0
+        elif path == "orbit":
+            a = u * math.tau
+            x, y, s = 0.5 + 0.3 * math.cos(a), 0.45 + 0.22 * math.sin(a), 0.8 + 0.3 * math.sin(a)
+        elif path == "zoom":
+            x, y, s = 0.35 + lane * 0.4, 0.4 + 0.1 * u, 0.2 + 2.2 * u
+            fade = min(1.0, u * 4.0, (1.0 - u) * 3.0)
+        else:                                      # appear: breathe in place, then dissolve
+            x, y, s = 0.2 + lane * 0.6, 0.35 + 0.1 * math.sin(t * 0.8), 1.0 + 0.08 * math.sin(t * 2.0)
+            fade = math.sin(u * math.pi)
+        cap = max(0.0, min(1.0, (u - 0.1) * 5.0, (0.9 - u) * 5.0))
+        return Shot(kind, x, y, s, 0.55 * fade, caption, 0.35 * cap)
