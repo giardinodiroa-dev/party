@@ -74,7 +74,7 @@ in vec2 uv; out vec4 frag;
 uniform sampler2D screen; uniform sampler2D prevGlow; uniform sampler2D prevClean;
 void main(){
   vec4 c = texture(screen, uv); vec4 g = texture(prevGlow, uv);
-  if (g.a > 0.97) { frag = vec4(texture(prevClean, uv).rgb, 1.0); return; }   // only what we drew SOLID (lens, a body at 0.985): keep what we last saw beneath
+  if (g.a > 0.9) { frag = vec4(texture(prevClean, uv).rgb, 1.0); return; }   // only what we drew SOLID (lens, a body at 0.985): keep what we last saw beneath
   float a = min(g.a, 0.95);
   frag = vec4(clamp((c.rgb - g.rgb) / (1.0 - a), 0.0, 1.0), 1.0);
 }
@@ -199,7 +199,7 @@ void main(){
     vec2 c = cell + vec2(i, j);
     if (hash21(c + 11.0) < 0.55) continue;
     vec2 cp = (c + vec2(hash21(c), hash21(c + 7.0))) * 28.0;
-    float tw = pow(0.5 + 0.5 * sin(time * (1.0 + hash21(c + 3.0) * 2.0) + hash21(c) * 6.28), 6.0);
+    float tw = 0.35 + 0.65 * hash21(c + 3.0);              // steady: stars do not blink, each keeps its own brightness
     star += smoothstep(2.2, 0.0, length(px - cp)) * tw;
   }
   star *= 0.35 + 0.65 * flash;
@@ -760,7 +760,7 @@ class AuraWindow(QOpenGLWindow):
         self.ledaie = None
         self.stage = None
         self.scenes = None
-        self.flags = {"stories": True, "brainwash": True, "scenes": True, "story_gap": 20.0, "phrase_gap": 5.0,
+        self.flags = {"stories": True, "brainwash": True, "scenes": True, "phrase_gap": 5.0, "at_once": 1, "every": {}, "phrase_on": True, "image_on": True,
                       "phrase_font": "MONO", "phrase_color": 0, "phrase_size": 1, "phrase_anim": 0,
                       "phrase_custom": (200.0, 0.8), "ledaie": True, "ledaie_font": "MONO", "ledaie_color": 5,
                       "ledaie_custom": (45.0, 0.8), "caption_font": "MONO", "caption_color": 0,
@@ -813,22 +813,22 @@ class AuraWindow(QOpenGLWindow):
         out = []
         cap_tint = phrase_tint(int(self.flags["caption_color"]), p.hue, t, tuple(self.flags["caption_custom"]))
         cap_font = str(self.flags["caption_font"])
-        self.stories.gap = float(self.flags["story_gap"])
-        self.brainwash.gap = float(self.flags["phrase_gap"])
-        if self.ledaie is not None:
-            self.ledaie.gap = float(self.flags["story_gap"]) * 0.8
-        # ---- the stage: one thing at a time ----
+        # ---- the stage: every source on its own clock; up to `at_once` together ----
         sources = self.flags["sources"]
         self.stories.hidden = {k for k, v in sources.items() if v == "hidden"}
         self.stage.breath = float(self.flags["phrase_gap"])
-        enabled = {"story": self.flags["stories"], "constellation": self.flags["stories"] and self.flags["constellations"],
-                   "ledaie": self.flags["stories"] and self.flags["ledaie"] and bool(self.ledaie and self.ledaie.entries),
-                   "phrase": self.flags["brainwash"] and bool(self.brainwash.phrases),
-                   "image": self.flags["brainwash"] and bool(self.brainwash.images), "scene": self.flags["scenes"]}
+        self.stage.at_once = int(self.flags.get("at_once", 1))
+        self.stage.every.update(self.flags.get("every") or {})
+        bw_on = self.flags["brainwash"]
+        enabled = {"story": self.flags["stories"], "constellation": self.flags["constellations"],
+                   "ledaie": self.flags["ledaie"] and bool(self.ledaie and self.ledaie.entries),
+                   "phrase": bw_on and self.flags.get("phrase_on", True) and bool(self.brainwash.phrases),
+                   "image": bw_on and self.flags.get("image_on", True) and bool(self.brainwash.images), "scene": self.flags["scenes"]}
         on = self.stage.tick(t, enabled, self.sources)
         self._spot = getattr(self, "_spot", 0.0) + ((1.0 if on else 0.0) - getattr(self, "_spot", 0.0)) * 0.08
         p.spotlight = self._spot
-        if on == "scene":
+        caps = []                     # bottom captions (scene, story): stacked upward so two never overlap
+        if "scene" in on:
             fr = self.scenes.frame(t, p.bass)
             if fr is not None:
                 p.streak = fr.streak
@@ -854,16 +854,13 @@ class AuraWindow(QOpenGLWindow):
                     sw, sh = w * k * q.scale / W, h * k * q.scale / H
                     out.append((tex, q.x - sw / 2, q.y - sh / 2, sw, sh, q.alpha, q.tint, q.angle, 1.0))
                 if fr.caption_alpha > 0.01:
-                    ctex, cw, ch = self.textures.text(fr.caption, 20, cap_font)
-                    out.append((ctex, 0.5 - cw / W / 2, 0.86, cw / W, ch / H, fr.caption_alpha, cap_tint))
-            return out
-        if on not in ("phrase", "image"):
-            for name in ("phrase", "image"):
+                    caps.append((fr.caption, fr.caption_alpha))
+        for name in ("phrase", "image"):
+            if name not in on:
                 self.sources[name].settle()
         led_tint = phrase_tint(int(self.flags["ledaie_color"]), p.hue, t, tuple(self.flags["ledaie_custom"]))
         led_font = str(self.flags["ledaie_font"])
-        if on == "constellation":
-            self.constellations.gap = float(self.flags["story_gap"]) * 1.5
+        if "constellation" in on:
             sky = self.constellations.frame(t)
             if sky is not None:
                 ctex, cw, ch = self.textures.constellation(sky.index)
@@ -871,7 +868,7 @@ class AuraWindow(QOpenGLWindow):
                 out.append((ctex, sky.x - cw / W / 2, sky.y - ch / H / 2, cw / W, ch / H, sky.alpha, (0.9, 0.93, 1.0)))
                 lt, lw, lh = self.textures.text(sky.caption, 20, cap_font)
                 out.append((lt, sky.x - lw / W / 2, sky.y + ch / H / 2 + 0.01, lw / W, lh / H, sky.caption_alpha, cap_tint))
-        if on == "ledaie":
+        if "ledaie" in on:
             show = self.ledaie.frame(t)
             if show is not None:
                 hx, hw_, hh_ = self.textures.handscript(show.word, 96 if show.kind == "symbol" else 64)
@@ -881,7 +878,7 @@ class AuraWindow(QOpenGLWindow):
                 line = f"{show.word}  ·  {show.meaning}" if show.kind == "word" else show.word
                 lt, lw, lh = self.textures.text(line, 22 if show.kind == "word" else 18, led_font)
                 out.append((lt, show.x - lw / W / 2, show.y + sh / 2 + 0.01, lw / W, lh / H, show.alpha * (0.8 if show.kind == "word" else 0.55), led_tint))
-        if on == "story":
+        if "story" in on:
             shot = self.stories.frame(t)
             if shot is not None:
                 wants_art = sources.get(shot.kind) == "painting"
@@ -895,10 +892,14 @@ class AuraWindow(QOpenGLWindow):
                 sw, sh = w * shot.scale / W, h * shot.scale / H
                 out.append((tex, shot.x - sw / 2, shot.y - sh / 2, sw, sh, shot.alpha, (0.95, 0.95, 1.0)))
                 if shot.caption_alpha > 0.01:
-                    ctex, cw, ch = self.textures.text(shot.caption, 20, cap_font)
-                    out.append((ctex, 0.5 - cw / W / 2, 0.86, cw / W, ch / H, shot.caption_alpha, cap_tint))
-        if on in ("phrase", "image"):
-            self.sources[on].settle()
+                    caps.append((shot.caption, shot.caption_alpha))
+        for n, (text, alpha) in enumerate(caps):
+            ctex, cw, ch = self.textures.text(text, 20, cap_font)
+            out.append((ctex, 0.5 - cw / W / 2, 0.86 - 0.055 * n, cw / W, ch / H, alpha, cap_tint))
+        if "phrase" in on or "image" in on:
+            for name in ("phrase", "image"):
+                if name in on:
+                    self.sources[name].settle()
             for item in self.brainwash.frame(t, p.flash):
                 if item.kind == "text":
                     px = (22, 30, 44, 64)[int(self.flags["phrase_size"]) % 4]
