@@ -1,5 +1,7 @@
 # Party
 
+Hotkey: **Super+Shift+p** toggles party mode (starts Party if it is not running, otherwise flips the aura on or off) via `~/bin/party-toggle`, bound in keygrab.
+
 Lights that move with whatever your computer is playing, and an **aura** that makes every line,
 border and glyph of every app on your screen glow on the beat without touching the apps.
 Stories drift through the void (a satellite that visits, a goldfish in space), phrases you choose
@@ -22,7 +24,7 @@ paintings in `art/`, drawings in `assets/sprites/*.svg`; none of those are in th
 It taps the PipeWire monitor of the default output (read-only; nothing is rerouted or
 recorded) and paints at 60 fps.
 
-Keys: `1` `2` `3` modes · `4` AURA (every line, border and glyph on the whole screen glows on the beat; click-through, apps untouched) · `B` bold (paint the strokes too; off by default so nothing gets heavier) · `A` astral sfx on/off · `G` ghost party + nebula background on/off · `C` cycle colour mode (chip opens the picker: PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA) · `T` cycle border style (picker: SOFT, NEON, DOUBLE, OUTLINE, ELECTRIC, SHADOW) · `[` `]` aura width (also the AURA WIDTH slider) · `X` FX picker · `W` brainwash · `Shift+W` phrase pace (2/3/5/10/20/45 s) · `Shift+N` story pace (5/10/20/40/90 s) · `K` black-hole cursor · `V` cycle edge waves (OFF, ELECTRIC, AQUA, FIRE, GHOST, MAGIC) · `N` stories · `H` edge shape BARS/WAVE · `Shift+C` cycle the bars' colour world (STYLE, PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA; also in the `X` picker) · `E` cycle which edges carry the bars (BOTTOM, ALL, TOP, SIDES, TOP+BOTTOM; any mix in the `X` picker) · `,` `.` brightness (also the BRIGHT slider) · `P` profiles picker · `Shift+P` save the current look as a profile · `M` next mode · `F` fullscreen · `Esc` leave fullscreen ·
+Keys: `1` `2` `3` modes · `4` AURA (every line, border and glyph on the whole screen glows on the beat; click-through, apps untouched) · `B` bold (paint the strokes too; off by default so nothing gets heavier) · `A` astral sfx on/off · `G` ghost party + nebula background on/off · `C` cycle colour mode (chip opens the picker: PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA) · `T` cycle border style (picker: SOFT, NEON, DOUBLE, OUTLINE, ELECTRIC, SHADOW) · `[` `]` aura width (also the AURA WIDTH slider) · `X` FX picker · `W` brainwash · `Shift+W` phrase every (2/3/5/10/20/45 s) · `Shift+N` story every (5/10/20/40/90 s) · `K` black-hole cursor · `V` cycle edge waves (OFF, ELECTRIC, AQUA, FIRE, GHOST, MAGIC) · `N` stories · `H` edge shape BARS/WAVE · `Shift+C` cycle the bars' colour world (STYLE, PEARL, MONO, RAINBOW, FIRE, ICE, HOLY, AURORA; also in the `X` picker) · `E` cycle which edges carry the bars (BOTTOM, ALL, TOP, SIDES, TOP+BOTTOM; any mix in the `X` picker) · `,` `.` brightness (also the BRIGHT slider) · `P` profiles picker · `Shift+P` save the current look as a profile · `M` next mode · `F` fullscreen · `Esc` leave fullscreen ·
 `Space` pause · `S` pick source (output monitor or mic) · `R` hot reload on/off ·
 `↑`/`↓` sensitivity · `Q` quit. Move the mouse to show the chrome; it fades after 2 s.
 
@@ -34,7 +36,7 @@ Key `4` or the fourth chip. A fullscreen, always-on-top, click-through GL layer 
 screen through MIT-SHM each frame, runs Sobel edge detection, blurs the edges into a halo,
 tints it with the current hue and the beat, and composites it over everything KWin draws.
 It un-blends its own previous frame from the grab so the glow never feeds back on itself.
-The halo is drawn beside strokes and never on them, so text keeps its exact pixels; `B` opts into painting the strokes. Colours come from a mother-of-pearl cosine palette over a hue field that drifts across the screen and through time, so no two regions share one colour. Astral layer: twinkling stars and bokeh orbs born on beats, each looked up across neighbouring grid cells so nothing is cut at a grid edge. Background (`G`): a domain-warped fbm nebula and six swaying ghost dancers that breathe with loudness, drawn only where there is no content so it reads as space behind the apps. Colour modes and border styles are shader switches; every choice is remembered. Starts at 30 fps and steps down (to 15) if a frame costs more than its slot, so the machine
+The halo is drawn beside strokes and never on them, so text keeps its exact pixels; `B` opts into painting the strokes. Colours come from a mother-of-pearl cosine palette over a hue field that drifts across the screen and through time, so no two regions share one colour. Astral layer: steady stars (each its own brightness, no blinking) and bokeh orbs born on beats, each looked up across neighbouring grid cells so nothing is cut at a grid edge. Background (`G`): a domain-warped fbm nebula and six swaying ghost dancers that breathe with loudness, drawn only where there is no content so it reads as space behind the apps. Colour modes and border styles are shader switches; every choice is remembered. Starts at 30 fps and steps down (to 15) if a frame costs more than its slot, so the machine
 stays usable. Status shows in the title strip as `AURA 30fps 2.1ms`.
 Offline proof: `python3 -c "from party.ui.aura import render_png; render_png('in.png','glow.png')"`.
 
@@ -80,8 +82,9 @@ the crown come round about twice as often as the rest.
 
 ## Settings panel
 
-`X` (or the FX chip) opens a settings panel inside the window: LOOK, BARS, BRAINWASH, STORIES,
-PROFILES. Every control applies at once and is saved. Any installed font can be chosen for
+`X` (or the FX chip) opens a settings panel inside the window: LOOK (also pause, fullscreen and the
+sound source, same list as `S`), STAGE (what appears, how often, how many at once), BARS,
+BRAINWASH, STORIES, IMAGES, PROFILES (save / load). Every control applies at once and is saved. Any installed font can be chosen for
 phrases, Ledaie lines and captions; each text role has a colour world or a CUSTOM hue and
 lightness. Bars: style, shape, colour, height, slimness and which edges. Esc closes the panel.
 
@@ -101,3 +104,38 @@ no-glow borders, cute drawings, sans fonts, pink text). Nothing switches you; lo
 Drawing styles: ASTRAL, CUTE, DARK (ghibli-dark inks), ELECTRIC (neon strokes), HOLLOW (voidblack
 magical). DARK/ELECTRIC/HOLLOW are the same geometry restyled, faces removed. The satellite visits:
 flies in, hovers close for a slow circle, orbits away; it comes round often.
+
+## The stage and the mini-movies
+
+Phrases, stories, scenes, Ledaie words, constellations and pictures each keep their OWN timer
+(STAGE tab: an ON box and an "every N s" slider per thing, ±30% jitter, counted from when it last
+ended). "Things at once" (1..6) says how many may share the screen: at 1 each appears alone, then a
+breath (the "breath between things" slider), then the longest-overdue thing; above 1 they overlap
+and bottom captions stack upward instead of covering each other. The stars of the sky are steady
+(each its own brightness, answering the beat a little), never blinking. Scenes are
+animated from code, not pictures slid around: a shooting star is a shader streak with a burning head
+and sparks; a ship banks along a curve with a flickering thruster, exhaust particles and a blinking
+light; a man walks across the void on a solved walk cycle. Figures and the ship are real 3D bodies:
+signed-distance capsules and ellipsoids smoothly joined, raymarched and lit in the shader with key,
+fill and rim light, skin, hair, cloth, hull, glass and engine materials (`party/rigs.py` solves the
+joints, `party/scenes.py` drives the scene, the SDF shader in `party/ui/aura.py` renders it).
+
+## Clips: little stories that make sense
+
+`party/clips.py` holds a library of clips, each a cast of tracks (a figure, a ship, a drawn actor, a
+glow, a shooting star) with keyframes and timed captions: a man walks out and a ship comes down for
+him; two ships flash hello as they pass; a ship pulls in at the gas station; a walk under a falling
+star; an old satellite steadies itself; the cat and the comet; an astronaut picked up; the owl and the
+moon; a whale in the nebula; dragon and rocket; the crown finds a fish; a meteor shower watched; the
+lighthouse keeper; earthrise; a phoenix on the bass; the long walk home; unicorn over the moon; the
+galaxy turns; butterfly and black hole; sun up. The stage plays every clip once before any repeat.
+Figures walk with planted feet (two-bone knee IK, phase from ground covered); ships face where they
+go, burn and blink. Add a clip by adding data.
+
+## Eye exam (clips review)
+
+`party-exam` starts a local site at http://localhost:8891/ with one card per clip. Nothing autoplays:
+load a clip, press play inside it. Each card has a feedback box (SAVE, or GOOD / BAD as a quick
+verdict) that writes to `exam/feedback.json`; I'M DONE marks the exam finished. Clips are authored
+the HyperFrames way, HTML + SVG + GSAP (`exam/clips/*.html`), so the picked ones render to video for
+Party afterwards.

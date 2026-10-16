@@ -174,3 +174,90 @@ def test_settings_panel_binds_to_window(tmp_path, monkeypatch):
     w._changed()
     data = json.loads((tmp_path / "state.json").read_text())
     assert data["bar_fill"] == 0.7 and data["aura_edges"] == 10 and data["ledaie_color"] == -2
+
+
+def test_stage_shows_one_thing_at_a_time():
+    from party.scenes import Stage
+    class Src:
+        def __init__(self, dur): self.dur, self.t0, self.on = dur, None, False
+        @property
+        def active(self): return self.on
+        def begin(self, t): self.t0, self.on = t, True
+        def frame(self, t):
+            if self.on and t - self.t0 >= self.dur: self.on = False
+    srcs = {k: Src(3.0) for k in ("phrase", "story", "scene", "ledaie", "constellation", "image")}
+    st = Stage(breath=2.0); seen = []
+    for i in range(1200):
+        t = i / 10
+        on = st.tick(t, {k: True for k in srcs}, srcs)
+        for s_ in srcs.values(): s_.frame(t)
+        assert len(on) <= 1
+        seen.append(next(iter(on), None))
+        assert sum(1 for s_ in srcs.values() if s_.active) <= 1
+    names = [x for x in seen if x]
+    assert len(set(names)) == 6 and any(x is None for x in seen[60:])
+
+
+def test_real_sources_never_overlap_on_stage():
+    from pathlib import Path as _P
+    from party.stories import Stories, Constellations
+    from party.ledaie import LedaieWords
+    from party.brainwash import Brainwash
+    from party.scenes import Stage, Scenes, BrainwashSource
+    st, co, le, bw, sc = Stories(seed=1), Constellations(seed=1), LedaieWords(seed=1), Brainwash(_P("brainwash")), Scenes(seed=1)
+    for s_ in (st, co, le, bw): s_.auto = False
+    srcs = {"story": st, "constellation": co, "ledaie": le, "phrase": BrainwashSource(bw, "text"), "image": BrainwashSource(bw, "image"), "scene": sc}
+    stage = Stage(breath=1.0); seen = set()
+    for i in range(5000):
+        t = i / 20
+        on = stage.tick(t, {k: True for k in srcs}, srcs)
+        assert len(on) <= 1
+        on = next(iter(on), None)
+        if on in ("phrase", "image"): srcs[on].settle(); bw.frame(t)
+        elif on: srcs[on].frame(t)
+        live = [k for k in ("story", "constellation", "ledaie", "scene") if srcs[k].active] + (["phrase"] if bw.text else []) + (["image"] if bw.image else [])
+        assert len(live) <= 1, (t, live)
+        if on: seen.add(on)
+    assert {"story", "ledaie", "phrase", "scene", "constellation"} <= seen
+
+
+def _fake_sources():
+    class Src:
+        def __init__(self, dur): self.dur, self.t0, self.on = dur, None, False
+        @property
+        def active(self): return self.on
+        def begin(self, t): self.t0, self.on = t, True
+        def frame(self, t):
+            if self.on and t - self.t0 >= self.dur: self.on = False
+    return {k: Src(d) for k, d in (("phrase", 5), ("story", 8), ("scene", 14), ("ledaie", 7), ("constellation", 9), ("image", 7))}
+
+
+def test_stage_at_once_caps_and_every_source_appears():
+    from party.scenes import Stage
+    for at_once in (1, 3):
+        srcs = _fake_sources()
+        st = Stage(breath=2.0, at_once=at_once, seed=3); seen = set(); peak = 0
+        for i in range(6000):                                   # 600 simulated seconds
+            t = i / 10
+            on = st.tick(t, {k: True for k in srcs}, srcs)
+            for s_ in srcs.values(): s_.frame(t)
+            assert len(on) <= at_once
+            peak = max(peak, len(on)); seen |= on
+        assert seen == set(srcs), (at_once, seen)
+        assert peak == at_once
+
+
+def test_stage_respects_per_source_on_and_every():
+    from party.scenes import Stage
+    srcs = _fake_sources()
+    st = Stage(breath=1.0, at_once=6, every={"phrase": 2.0, "scene": 300.0}, seed=1)
+    starts = {k: 0 for k in srcs}; was = set()
+    enabled = {k: k != "image" for k in srcs}
+    for i in range(6000):
+        t = i / 10
+        on = st.tick(t, enabled, srcs)
+        for k in on - was: starts[k] += 1
+        was = on
+        for s_ in srcs.values(): s_.frame(t)
+    assert starts["image"] == 0
+    assert starts["phrase"] > 3 * starts["scene"]

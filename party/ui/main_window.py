@@ -29,7 +29,8 @@ STATE = Path(os.environ.get("PARTY_STATE") or ROOT / "state.json")
 PROFILES = ROOT / "profiles"
 PROFILE_KEYS = ("mode", "sensitivity", "hotreload", "aura", "aura_width", "aura_bold", "aura_astral",
                 "aura_color", "aura_border", "aura_ghost", "aura_waves", "aura_shape", "aura_bright",
-                "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "story_gap", "phrase_gap", "phrase_font", "phrase_color", "phrase_size", "phrase_anim",
+                "aura_lens", "aura_brainwash", "aura_stories", "aura_edges", "aura_barcolor", "phrase_gap", "stage_at_once", "phrase_on", "image_on",
+                "every_story", "every_constellation", "every_ledaie", "every_phrase", "every_image", "every_scene", "phrase_font", "phrase_color", "phrase_size", "phrase_anim",
                 "bar_height", "bar_fill", "phrase_custom", "ledaie_on", "ledaie_font", "ledaie_color", "ledaie_custom",
                 "caption_font", "caption_color", "caption_custom", "constellations_on", "sources", "sprite_style", "aura_scenes", "aura_look")
 TITLE_H = 30.0
@@ -37,6 +38,7 @@ BAR_H = 56.0
 EDGE = 7
 CHROME_IDLE_MS = 2000
 SENS_MIN, SENS_MAX = 0.3, 3.0
+EVERY_DEFAULTS = {"story": 20.0, "constellation": 45.0, "ledaie": 25.0, "phrase": 8.0, "image": 60.0, "scene": 40.0}
 
 
 def fit_text(p: QPainter, rect: QRectF, text: str, size: float, color: str,
@@ -161,8 +163,12 @@ class MainWindow(QWidget):
         self.aura_waves = 1
         self.aura_edges = 1
         self.aura_barcolor = 2
-        self.story_gap = 20.0
-        self.phrase_gap = 5.0
+        self.phrase_gap = 5.0                                 # the breath: empty stage after a thing ends (one at a time)
+        self.stage_at_once = 1                                # how many things may share the stage
+        self.phrase_on = True
+        self.image_on = True
+        for k, v in EVERY_DEFAULTS.items():
+            setattr(self, f"every_{k}", v)
         self.phrase_font = "MONO"
         self.phrase_color = 0
         self.phrase_size = 1
@@ -254,8 +260,14 @@ class MainWindow(QWidget):
             self.aura_waves = 1                      # one-time: older saves said OFF; he wants the bars
         self.aura_edges = int(state.get("aura_edges", 1)) & 15
         self.aura_barcolor = max(-1, min(len(COLOR_MODES) - 1, int(state.get("aura_barcolor", 2))))
-        self.story_gap = min(300.0, max(3.0, float(state.get("story_gap", 20.0))))
         self.phrase_gap = min(120.0, max(1.0, float(state.get("phrase_gap", 5.0))))
+        self.stage_at_once = min(6, max(1, int(state.get("stage_at_once", 1))))
+        self.phrase_on = bool(state.get("phrase_on", True))
+        self.image_on = bool(state.get("image_on", True))
+        for k, v in EVERY_DEFAULTS.items():
+            if k == "story" and "every_story" not in state and "story_gap" in state:
+                v = state["story_gap"]                       # older saves: STORY EVERY carries over
+            setattr(self, f"every_{k}", min(300.0, max(2.0, float(state.get(f"every_{k}", v)))))
         self.phrase_font = state.get("phrase_font") if state.get("phrase_font") in PHRASE_FONT_NAMES else "MONO"
         self.phrase_color = int(state.get("phrase_color", 0)) % len(COLOR_MODES) if int(state.get("phrase_color", 0)) >= 0 else -2
         self.phrase_size = int(state.get("phrase_size", 1)) % 4
@@ -311,8 +323,11 @@ class MainWindow(QWidget):
         if self.aura is not None:
             self.aura.flags["stories"] = self.aura_stories
             self.aura.flags["brainwash"] = self.aura_brainwash
-            self.aura.flags["story_gap"] = self.story_gap
             self.aura.flags["phrase_gap"] = self.phrase_gap
+            self.aura.flags["at_once"] = self.stage_at_once
+            self.aura.flags["every"] = {k: getattr(self, f"every_{k}") for k in EVERY_DEFAULTS}
+            self.aura.flags["phrase_on"] = self.phrase_on
+            self.aura.flags["image_on"] = self.image_on
             self.aura.flags["phrase_font"] = self.phrase_font
             self.aura.flags["phrase_color"] = self.phrase_color
             self.aura.flags["phrase_size"] = self.phrase_size
@@ -336,13 +351,15 @@ class MainWindow(QWidget):
     PHRASE_GAPS = [2.0, 3.0, 5.0, 10.0, 20.0, 45.0]
 
     def cycle_story_gap(self) -> None:
+        """Shift+N: the story's own timer (STAGE tab · story every)."""
         g = self.STORY_GAPS
-        self.story_gap = g[(g.index(self.story_gap) + 1) % len(g)] if self.story_gap in g else g[0]
+        self.every_story = g[(g.index(self.every_story) + 1) % len(g)] if self.every_story in g else g[0]
         self._changed()
 
     def cycle_phrase_gap(self) -> None:
+        """Shift+W: the phrase's own timer (STAGE tab · phrase every)."""
         g = self.PHRASE_GAPS
-        self.phrase_gap = g[(g.index(self.phrase_gap) + 1) % len(g)] if self.phrase_gap in g else g[0]
+        self.every_phrase = g[(g.index(self.every_phrase) + 1) % len(g)] if self.every_phrase in g else g[0]
         self._changed()
 
     def toggle_settings(self) -> None:
@@ -372,8 +389,8 @@ class MainWindow(QWidget):
                   ("phrasecolor", f"PHRASE COLOUR · {COLOR_MODES[self.phrase_color]}  (tap to cycle)"),
                   ("phrasesize", f"PHRASE SIZE · {('S', 'M', 'L', 'XL')[self.phrase_size]}  (tap to cycle)"),
                   ("phraseanim", f"PHRASE MOTION · {PHRASE_ANIMS[self.phrase_anim]}  (tap to cycle)")]
-        items += [("storygap", f"STORY EVERY · {self.story_gap:.0f}s  (tap to cycle)"),
-                  ("phrasegap", f"PHRASE EVERY · {self.phrase_gap:.0f}s  (tap to cycle)")]
+        items += [("storygap", f"STORY EVERY · {self.every_story:.0f}s  (tap to cycle)"),
+                  ("phrasegap", f"PHRASE EVERY · {self.every_phrase:.0f}s  (tap to cycle)")]
         items += [(f"barcolor:{i}", f"BAR COLOUR · {n}" + (" ·· LIVE" if i == self.aura_barcolor else ""))
                   for i, n in [(-1, "STYLE")] + list(enumerate(COLOR_MODES))]
         items += [(f"waves:{i}", f"BAR STYLE · {n}" + (" ·· LIVE" if i == self.aura_waves else ""))
@@ -475,7 +492,9 @@ class MainWindow(QWidget):
                 "aura_brainwash": self.aura_brainwash, "aura_stories": self.aura_stories,
                 "aura_shape": self.aura_shape, "aura_bright": round(self.aura_bright, 3),
                 "aura_edges": self.aura_edges, "aura_barcolor": self.aura_barcolor,
-                "story_gap": self.story_gap, "phrase_gap": self.phrase_gap,
+                "phrase_gap": self.phrase_gap, "stage_at_once": self.stage_at_once,
+                "phrase_on": self.phrase_on, "image_on": self.image_on,
+                **{f"every_{k}": getattr(self, f"every_{k}") for k in EVERY_DEFAULTS},
                 "phrase_font": self.phrase_font, "phrase_color": self.phrase_color,
                 "phrase_size": self.phrase_size, "phrase_anim": self.phrase_anim,
                 "bar_height": round(self.bar_height, 3), "bar_fill": round(self.bar_fill, 3),
@@ -531,6 +550,8 @@ class MainWindow(QWidget):
             return
         keep = self.state()
         keep.update({k: v for k, v in data.items() if k in PROFILE_KEYS})
+        if "story_gap" in data and "every_story" not in data:
+            keep["every_story"] = data["story_gap"]          # older profiles
         keep["profile"] = name
         aura_on = bool(keep.get("aura", False))
         was_on = self.aura is not None and self.aura.isVisible()

@@ -73,6 +73,7 @@ class SettingsPanel(QWidget):
         root.addWidget(self.tabs, 1)
         self.families = sorted(QFontDatabase.families())
         self._build_look()
+        self._build_stage()
         self._build_bars()
         self._build_brainwash()
         self._build_stories()
@@ -168,6 +169,41 @@ class SettingsPanel(QWidget):
         self.check(f, "nebula and ghost party", "aura_ghost")
         self.check(f, "black-hole cursor", "aura_lens")
         self.check(f, "hot reload on code change", "hotreload_on")
+        self.check(f, "pause (Space)", "paused", action=self.win.toggle_pause)
+        fs = QCheckBox("fullscreen (F)")
+        fs.toggled.connect(lambda b: None if self._syncing or b == self.win.isFullScreen() else self.win.toggle_fullscreen())
+        f.addRow("", fs); self._binders.append(lambda: fs.setChecked(self.win.isFullScreen()))
+        from ..audio import list_sources
+        src = QComboBox(); src.setMaxVisibleItems(14)
+        src.setMinimumWidth(80); src.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self._src_names: list = []
+        def src_pick(i):
+            if self._syncing or not 0 <= i < len(self._src_names):
+                return
+            want = self._src_names[i] or None
+            if want != self.win.source:
+                self.win.source = want; self.win.tap.set_source(want); self.win._changed()
+        src.currentIndexChanged.connect(src_pick)
+        def src_sync():
+            opts = [("", "AUTO · follow the default output")] + list_sources()      # same list the S key shows
+            self._src_names = [n for n, _ in opts]
+            src.clear(); src.addItems([lbl for _, lbl in opts])
+            src.setCurrentIndex(self._src_names.index(self.win.source or "") if (self.win.source or "") in self._src_names else 0)
+        f.addRow("sound source (S)", src); self._binders.append(src_sync)
+
+    def _build_stage(self) -> None:
+        f = self._tab("STAGE")
+        hint = QLabel("each thing keeps its own timer · 'every' = seconds after it ends before it comes again (±30%) · "
+                      "things at once = how many may share the screen (1 = each alone, then a breath)")
+        hint.setObjectName("hint"); hint.setWordWrap(True); f.addRow(hint)
+        self.slider(f, "things at once", "stage_at_once", 1, 6, 1, "{:.0f}")
+        self.slider(f, "breath between things", "phrase_gap", 1.0, 60.0, 1.0, "{:.0f}s")
+        for name, label, attr in (("story", "stories", "aura_stories"), ("constellation", "constellations", "constellations_on"),
+                                  ("ledaie", "Ledaie words", "ledaie_on"), ("phrase", "phrases", "phrase_on"),
+                                  ("image", "pictures", "image_on"), ("scene", "mini-movies", "aura_scenes")):
+            self.check(f, f"{label} ON", attr)
+            self.slider(f, f"   {label} every", f"every_{name}", 2.0, 300.0, 1.0, "{:.0f}s")
+        hint2 = QLabel("phrases and pictures also need BRAINWASH on (W)"); hint2.setObjectName("hint"); hint2.setWordWrap(True); f.addRow(hint2)
 
     def _build_bars(self) -> None:
         f = self._tab("BARS")
@@ -189,7 +225,6 @@ class SettingsPanel(QWidget):
     def _build_brainwash(self) -> None:
         f = self._tab("BRAINWASH")
         self.check(f, "brainwash phrases and pictures", "aura_brainwash")
-        self.slider(f, "breath between things", "phrase_gap", 1.0, 60.0, 1.0, "{:.0f}s")
         self.font(f, "font", "phrase_font", PHRASE_FONT_NAMES)
         self.colour(f, "colour", "phrase_color", "phrase_custom")
         self.combo(f, "size", "phrase_size", SIZES)
@@ -202,7 +237,6 @@ class SettingsPanel(QWidget):
         self.check(f, "stories in the void", "aura_stories")
         self.check(f, "mini-movies (shooting stars, ships)", "aura_scenes")
         self.combo(f, "mini-movie finish", "aura_look", ["ALL · one per story", "CHROME", "HOLO", "TOON", "PEARL", "NEON", "GHOST"], [-1, 0, 1, 2, 3, 4, 5])
-        self.slider(f, "story every", "story_gap", 3.0, 120.0, 1.0, "{:.0f}s")
         self.check(f, "real constellations", "constellations_on")
         self.check(f, "Ledaie words and symbols", "ledaie_on")
         self.font(f, "Ledaie text font", "ledaie_font", PHRASE_FONT_NAMES)

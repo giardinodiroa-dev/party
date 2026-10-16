@@ -1,7 +1,7 @@
 """The stage and the mini-movies.
 
-STAGE: only one thing is ever on screen — a story, a Ledaie word, a phrase, a picture, a
-constellation, or a scene. Each gets the screen alone, then a breath, then the next.
+STAGE: stories, Ledaie words, phrases, pictures, constellations and scenes each keep their own
+timer; `at_once` says how many share the screen (1 = each alone, then a breath, then the next).
 
 SCENES are animated, not pictures slid around: a shooting star is a real streak with sparks
 drawn by the shader; a spaceship banks along a curve, its thruster flickers, exhaust particles
@@ -13,36 +13,64 @@ import math
 import random
 from dataclasses import dataclass, field
 
-ORDER = ["phrase", "story", "scene", "phrase", "ledaie", "story", "constellation", "phrase", "scene", "image"]
+SOURCES = ("story", "constellation", "ledaie", "phrase", "image", "scene")
+DEFAULT_EVERY = {"story": 20.0, "constellation": 45.0, "ledaie": 25.0, "phrase": 8.0, "image": 60.0, "scene": 40.0}
 
 
 class Stage:
-    def __init__(self, breath: float = 5.0) -> None:
-        self.i = 0
-        self.active: str | None = None
-        self.next_at = 4.0
-        self.breath = breath
+    """The only clock. Every source has its own `every` (seconds from the end of one appearance to
+    the start of the next, ±30% jitter, live: a slider change applies at once). `at_once` says how
+    many things may be on stage together (1 = the spotlight: one alone, then `breath` of empty
+    stage). The longest-overdue source goes first, so nothing starves."""
 
-    def tick(self, t: float, enabled: dict[str, bool], sources: dict) -> str | None:
-        """Returns the name of the thing on stage right now, or None during a breath."""
-        if self.active is not None:
-            if not sources[self.active].active:
-                self.active = None
-                self.next_at = t + self.breath
-            return self.active
-        if t < self.next_at:
-            return None
-        for _ in range(len(ORDER)):
-            name = ORDER[self.i % len(ORDER)]
-            self.i += 1
-            src = sources.get(name)
-            if src is not None and enabled.get(name, False):
-                src.begin(t)
-                if src.active or getattr(src, "pending", False):
-                    self.active = name
-                    return name
-        self.next_at = t + self.breath
-        return None
+    def __init__(self, breath: float = 5.0, at_once: int = 1, every: dict | None = None, seed: int | None = None) -> None:
+        self.rng = random.Random(seed)
+        self.breath = breath
+        self.at_once = at_once
+        self.every = dict(DEFAULT_EVERY, **(every or {}))
+        self.active: set[str] = set()
+        self.free_at = 4.0
+        self.last: dict[str, float] = {}          # when each source last ended (or first became eligible)
+        self.jit: dict[str, float] = {}
+
+    @property
+    def on(self) -> str | None:
+        """Compat: one name on stage (any), or None."""
+        return next(iter(sorted(self.active)), None)
+
+    def _due(self, name: str) -> float:
+        return self.last[name] + float(self.every.get(name, 20.0)) * self.jit[name]
+
+    def _rest(self, name: str, t: float) -> None:
+        self.last[name] = t
+        self.jit[name] = self.rng.uniform(0.7, 1.3)
+
+    def tick(self, t: float, enabled: dict[str, bool], sources: dict) -> set[str]:
+        """Returns the set of names on stage right now (empty during a breath)."""
+        for name in list(self.active):
+            if not sources[name].active:
+                self.active.discard(name)
+                self._rest(name, t)
+                if self.at_once <= 1:
+                    self.free_at = t + self.breath
+        if t < self.free_at:
+            return set(self.active)
+        for name in SOURCES:
+            if name not in self.last:                          # first appearance: staggered, not all at once
+                self.last[name] = t - float(self.every.get(name, 20.0)) * 0.7 + self.rng.uniform(0.0, 0.3) * float(self.every.get(name, 20.0))
+                self.jit[name] = 1.0
+        due = sorted((self._due(n), n) for n in SOURCES
+                     if n in sources and enabled.get(n, False) and n not in self.active and t >= self._due(n))
+        for _, name in due:
+            if len(self.active) >= max(1, int(self.at_once)):
+                break
+            src = sources[name]
+            src.begin(t)
+            if src.active or getattr(src, "pending", False):
+                self.active.add(name)
+            else:
+                self._rest(name, t)                            # nothing to show (empty folder): try again later
+        return set(self.active)
 
 
 class BrainwashSource:

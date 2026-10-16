@@ -86,6 +86,8 @@ def main(argv: list[str] | None = None) -> int:
         app.quit()
     signal.signal(signal.SIGTERM, _bye)
     signal.signal(signal.SIGINT, _bye)
+    # SIGUSR1 = party mode on/off (the aura), from the hotkey via ~/bin/party-toggle
+    signal.signal(signal.SIGUSR1, lambda *_a: QTimer.singleShot(0, window.toggle_aura))
     tick = QTimer(); tick.start(300); tick.timeout.connect(lambda: None)   # lets Python run signal handlers
     return app.exec()
 
